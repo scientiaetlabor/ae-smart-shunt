@@ -10,9 +10,14 @@
 
 #include "passwords.h"
 
-//#define USE_ADC // allows the ADC to be polled
+#define USE_ADC // allows the ADC to be polled
 #define manDataSizeMax 31
 #define I2C_ADDRESS 0x40
+
+const float ohms = 0.001078; // 100A shunt
+float batteryCapacity = 100.00; // 100AH battery
+unsigned long lastUpdateTime = 0;
+float remainingBatteryTime;
 
 const int scanTime = 5; //In seconds
 const int alertPin = 7; // ToDo: use this
@@ -171,6 +176,31 @@ void prtnib(int n) {
   if (n>=4) {Serial.print("1"); n-=4;} else {Serial.print("0");}
   if (n>=2) {Serial.print("1"); n-=2;} else {Serial.print("0");}
   if (n>=1) {Serial.print("1");} else {Serial.print("0");}
+}
+
+void updateBatteryCapacity(float current) {
+    unsigned long currentTime = millis();
+    
+    // On first run, initialize the timer
+    if (lastUpdateTime == 0) {
+        lastUpdateTime = currentTime;
+        return;
+    }
+
+    // Time delta in seconds
+    float deltaTimeSec = (currentTime - lastUpdateTime) / 1000.0;
+
+    // Calculate used charge in Ah (Coulombs = A * s, Ah = A * s / 3600)
+    float usedAh = (current * deltaTimeSec) / 3600.0;
+
+    // Subtract from battery capacity
+    batteryCapacity -= usedAh;
+
+    // Clamp to 0
+    if (batteryCapacity < 0) batteryCapacity = 0;
+
+    // Update timestamp
+    lastUpdateTime = currentTime;
 }
 
 class MyAdvertisedDeviceCallbacks : public BLEAdvertisedDeviceCallbacks
@@ -353,7 +383,7 @@ void setup() {
   Serial.begin(115200);
   
   #ifdef USE_ADC
-    Wire.begin(20,21);
+    Wire.begin(6,10);
     ina226.init();
     ina226.waitUntilConversionCompleted(); //if you comment this line the first data might be zero
   #endif
@@ -373,7 +403,7 @@ void setup() {
   AVERAGE_512        512
   AVERAGE_1024      1024
   */
-  //ina226.setAverage(AVERAGE_16); // choose mode and uncomment for change of default
+  ina226.setAverage(AVERAGE_16); // choose mode and uncomment for change of default
 
   /* Set conversion time in microseconds
      One set of shunt and bus voltage conversion will take: 
@@ -389,7 +419,7 @@ void setup() {
      CONV_TIME_4156       4.156 ms
      CONV_TIME_8244       8.244 ms  
   */
-  //ina226.setConversionTime(CONV_TIME_1100); //choose conversion time and uncomment for change of default
+  ina226.setConversionTime(CONV_TIME_8244); //choose conversion time and uncomment for change of default
   
   /* Set measure mode
   POWER_DOWN - INA226 switched off
@@ -403,6 +433,7 @@ void setup() {
      Correction factor = current delivered from calibrated equipment / current delivered by INA226
   */
   // ina226.setCorrectionFactor(0.95);
+  ina226.setResistorRange(ohms,100.0); // choose resistor 5 mOhm and gain range up to 10 A
   
   Serial.println("INA226 Current Sensor Example Sketch - Continuous");
 
@@ -450,11 +481,17 @@ void loop() {
     localVoltage0Struct.rearAuxBatt1V = ina226.getBusVoltage_V();
     localVoltage0Struct.rearAuxBatt1I = ina226.getCurrent_A();
     
-    Serial.print("Shunt Voltage [mV]: "); Serial.println(shuntVoltage_mV);
-    Serial.print("Bus Voltage [V]: "); Serial.println(busVoltage_V);
+    Serial.print("Battery Voltage [V]: "); Serial.println(busVoltage_V);
     Serial.print("Load Voltage [V]: "); Serial.println(loadVoltage_V);
-    Serial.print("Current[mA]: "); Serial.println(current_mA);
-    Serial.print("Bus Power [mW]: "); Serial.println(power_mW);
+    Serial.print("Current [A]: "); Serial.println(current_mA/1000);
+    Serial.print("Bus Power [W]: "); Serial.println(power_mW/1000);
+
+    float measuredCurrent = current_mA/1000; // in Amps
+    updateBatteryCapacity(measuredCurrent);
+
+    Serial.print("Remaining Capacity [Ah]: ");
+    Serial.println(batteryCapacity, 4);
+
     if(!ina226.overflow){
       Serial.println("Values OK - no overflow");
     }
