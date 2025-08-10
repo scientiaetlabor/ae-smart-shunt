@@ -6,7 +6,6 @@
 #include "NimBLEBeacon.h"
 #include "shared_defs.h"
 #include <aes/esp_aes.h>
-#include <esp_now.h>
 
 #include "passwords.h"
 
@@ -26,12 +25,12 @@ private:
     char convertCharToHex(char ch);
     void prtnib(int n);
 
-    struct_message_voltage0* localVoltage0Struct;
     char savedDeviceName[32];
     int keyBits = 128;
     uint8_t* key = (uint8_t*)key; // from passwords.h
 
-    void sendMessage();
+    struct_message_voltage0* voltageStruct;
+
 };
 
 #endif // BLE_HANDLER_H

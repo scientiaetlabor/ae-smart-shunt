@@ -44,4 +44,16 @@ typedef struct struct_message_voltage0 {
   float rearAuxBatt1I; 
 } struct_message_voltage0;
 
+typedef struct struct_message_ae_smart_shunt_1 {
+  int messageID;
+  bool dataChanged;
+  float batteryVoltage;
+  float batteryCurrent;
+  float batteryPower;
+  float batterySOC;
+  float batteryCapacity;
+  int batteryState;
+  char runFlatTime[40];
+} struct_message_ae_smart_shunt_1;
+
 #endif // SHARED_DEFS_H
