@@ -1,35 +1,26 @@
-#include <Arduino.h>
-#include "ina226_adc.h"
 #include "espnow_handler.h"
+#include <esp_err.h>
 
 ESPNowHandler::ESPNowHandler(const uint8_t *broadcastAddr)
 {
     memcpy(broadcastAddress, broadcastAddr, 6);
     memset(&peerInfo, 0, sizeof(peerInfo));
+    // Optionally zero the local struct
+    memset(&localAeSmartShuntStruct, 0, sizeof(localAeSmartShuntStruct));
 }
 
 void ESPNowHandler::setAeSmartShuntStruct(const struct_message_ae_smart_shunt_1 &shuntStruct)
 {
-    localAeSmartShuntStruct.messageID = shuntStruct.messageID;
-    localAeSmartShuntStruct.dataChanged = shuntStruct.dataChanged;
-    localAeSmartShuntStruct.batteryVoltage = shuntStruct.batteryVoltage;
-    localAeSmartShuntStruct.batteryCurrent = shuntStruct.batteryCurrent;
-    localAeSmartShuntStruct.batteryPower = shuntStruct.batteryPower;
-    localAeSmartShuntStruct.batterySOC = shuntStruct.batterySOC;
-    localAeSmartShuntStruct.batteryCapacity = shuntStruct.batteryCapacity;
-    localAeSmartShuntStruct.batteryState = shuntStruct.batteryState;
-
-    strncpy(localAeSmartShuntStruct.runFlatTime, shuntStruct.runFlatTime, sizeof(localAeSmartShuntStruct.runFlatTime));
-    localAeSmartShuntStruct.runFlatTime[sizeof(localAeSmartShuntStruct.runFlatTime) - 1] = '\0';
+    // shallow copy of struct (same layout). If you need cross-platform compatibility,
+    // serialize the fields into a packed buffer instead.
+    localAeSmartShuntStruct = shuntStruct;
 }
 
-void printMacAddress(const uint8_t* mac) {
-    for (int i = 0; i < 6; i++) {
-        if (i > 0) Serial.print(":");
-        if (mac[i] < 16) Serial.print("0");  // leading zero for single hex digit
-        Serial.print(mac[i], HEX);
-    }
-    Serial.println();
+void ESPNowHandler::printMacAddress(const uint8_t* mac) {
+    char buf[32];
+    snprintf(buf, sizeof(buf), "%02X:%02X:%02X:%02X:%02X:%02X",
+             mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    Serial.println(buf);
 }
 
 void ESPNowHandler::sendMessageAeSmartShunt()
@@ -37,7 +28,9 @@ void ESPNowHandler::sendMessageAeSmartShunt()
     uint8_t *data = (uint8_t *)&localAeSmartShuntStruct;
     size_t len = sizeof(localAeSmartShuntStruct);
 
-    Serial.print("Sending data: ");
+    Serial.print("Sending data (len=");
+    Serial.print(len);
+    Serial.print("): ");
     for (size_t i = 0; i < len; i++)
     {
         Serial.printf("%02X ", data[i]);
@@ -53,13 +46,15 @@ void ESPNowHandler::sendMessageAeSmartShunt()
     {
         Serial.print("Broadcast Address: ");
         printMacAddress(broadcastAddress);
-        Serial.printf("Error sending AeSmartShunt data to: 0x%04X\n", result);
+        Serial.print("Error sending AeSmartShunt data: ");
+        Serial.println(esp_err_to_name(result));
     }
 }
 
 bool ESPNowHandler::begin()
 {
     WiFi.mode(WIFI_MODE_STA);
+    // Disable WiFi scan power save if needed (optional).
     if (esp_now_init() != ESP_OK)
     {
         Serial.println("Error initializing ESP-NOW");
@@ -75,8 +70,9 @@ void ESPNowHandler::registerSendCallback(esp_now_send_cb_t callback)
 
 bool ESPNowHandler::addPeer()
 {
+    memset(&peerInfo, 0, sizeof(peerInfo));
     memcpy(peerInfo.peer_addr, broadcastAddress, 6);
-    peerInfo.channel = 0;
+    peerInfo.channel = 0; // 0 means current WiFi channel. Set explicitly if needed.
     peerInfo.encrypt = false;
 
     if (esp_now_add_peer(&peerInfo) != ESP_OK)
