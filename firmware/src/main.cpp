@@ -15,8 +15,8 @@ float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used fo
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 struct_message_ae_smart_shunt_1 ae_smart_shunt_struct;
-INA226_ADC ina226_adc(I2C_ADDRESS, 0.001078f, 100.00f);
-ESPNowHandler espNowHandler(broadcastAddress);
+INA226_ADC ina226_adc(I2C_ADDRESS, 0.0007191, 100.00f); // 0.000765 Ohm shunt resistor, 100 Ah battery capacity
+ESPNowHandler espNowHandler(broadcastAddress); // ESP-NOW handler for sending data
 
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
@@ -63,7 +63,7 @@ void loop()
   ina226_adc.readSensors();
 
   // Populate struct fields
-  ae_smart_shunt_struct.messageID = 1;
+  ae_smart_shunt_struct.messageID = 11;
   ae_smart_shunt_struct.dataChanged = true;
 
   ae_smart_shunt_struct.batteryVoltage = ina226_adc.getBusVoltage_V();
