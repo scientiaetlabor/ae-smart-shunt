@@ -7,7 +7,6 @@
 #include <esp_now.h>
 #include <esp_err.h>
 
-
 #define USE_ADC // if not defined, use victron BLE
 
 float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used for SOC calc)
@@ -15,7 +14,7 @@ float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used fo
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 struct_message_ae_smart_shunt_1 ae_smart_shunt_struct;
-INA226_ADC ina226_adc(I2C_ADDRESS, 0.0007191, 100.00f); // 0.000765 Ohm shunt resistor, 100 Ah battery capacity
+INA226_ADC ina226_adc(I2C_ADDRESS, 0.0007191f, 100.00f); // shunt resistor, rated battery capacity
 ESPNowHandler espNowHandler(broadcastAddress); // ESP-NOW handler for sending data
 
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
@@ -47,8 +46,6 @@ void setup()
     Serial.println("Broadcast peer added");
   }
 
-
-
 #ifndef USE_ADC
   // Code to use victron BLE
   bleHandler.startScan(scanTime);
@@ -72,7 +69,7 @@ void loop()
 
   ae_smart_shunt_struct.batteryState = 0; // 0 = Normal, 1 = Warning, 2 = Critical
 
-  // Update remaining capacity in the INA226 helper (assuming it expects current in A)
+  // Update remaining capacity in the INA226 helper (expects current in A)
   ina226_adc.updateBatteryCapacity(ina226_adc.getCurrent_mA() / 1000.0f);
 
   // Get remaining Ah from INA helper

@@ -16,7 +16,7 @@ public:
     float getPower_mW() const;
     float getLoadVoltage_V() const;
     float getBatteryCapacity() const;
-    void updateBatteryCapacity(float currentA);
+    void updateBatteryCapacity(float currentA); // current in A (positive = discharge)
     bool isOverflow() const;
     String getAveragedRunFlatTime(float currentA, float warningThresholdHours, bool &warningTriggered);
 
@@ -26,7 +26,10 @@ public:
 private:
     INA226_WE ina226;
     float ohms;
-    float batteryCapacity;
+
+    float batteryCapacity;       // remaining capacity in Ah
+    float maxBatteryCapacity;    // rated max capacity in Ah
+
     unsigned long lastUpdateTime;
     float shuntVoltage_mV;
     float loadVoltage_V;
@@ -36,7 +39,7 @@ private:
 
     // Averaging buffer for run-flat time (in hours)
     static const int maxSamples = 180; // e.g. 30 minutes at 10s intervals
-    float runFlatSamples[maxSamples] = {0};
+    float runFlatSamples[maxSamples];
     int sampleIndex = 0;
     int sampleCount = 0;
     unsigned long lastSampleTime = 0;
