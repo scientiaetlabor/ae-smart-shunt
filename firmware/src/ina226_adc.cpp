@@ -186,7 +186,7 @@ String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningTh
     if (currentA > 0.001f) {
         runHours = batteryCapacity / currentA;
         charging = false;
-    } else if (currentA < -0.001f) {
+    } else if (currentA < -0.20f) {
         if (batteryCapacity >= fullyChargedThreshold) {
              return String("Fully Charged!");
         }
@@ -196,7 +196,7 @@ String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningTh
     }
 
     if (runHours <= 0.0f) {
-      return String("Calculating...");
+      return String("Fully Charged!");
     }
 
     if (runHours > maxRunFlatHours) {
