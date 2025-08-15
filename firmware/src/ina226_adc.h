@@ -4,6 +4,7 @@
 #include <INA226_WE.h>
 #include <Wire.h>
 #include <Arduino.h>
+#include <Preferences.h>
 
 class INA226_ADC {
 public:
@@ -12,7 +13,8 @@ public:
     void readSensors();
     float getShuntVoltage_mV() const;
     float getBusVoltage_V() const;
-    float getCurrent_mA() const;
+    float getCurrent_mA() const;      // calibrated current (mA)
+    float getRawCurrent_mA() const;   // raw measured current (mA) from INA226
     float getPower_mW() const;
     float getLoadVoltage_V() const;
     float getBatteryCapacity() const;
@@ -20,7 +22,19 @@ public:
     bool isOverflow() const;
     String getAveragedRunFlatTime(float currentA, float warningThresholdHours, bool &warningTriggered);
 
-    // New method to calculate run-flat time and return formatted string
+    // Calibration APIs
+    // Try to load persisted calibration for the given shunt rating.
+    // Returns true if a persisted calibration was found and applied; false otherwise.
+    bool loadCalibration(uint16_t shuntRatedA);
+    // Persist calibration for a shunt rating
+    bool saveCalibration(uint16_t shuntRatedA, float gain, float offset_mA);
+    // Set/get in-memory calibration
+    void setCalibration(float gain, float offset_mA);
+    void getCalibration(float &gainOut, float &offsetOut) const;
+    // Query stored calibration without applying it; returns true if entry exists.
+    bool getStoredCalibrationForShunt(uint16_t shuntRatedA, float &gainOut, float &offsetOut) const;
+
+    // Format run-flat time from current and return string
     String calculateRunFlatTimeFormatted(float currentA, float warningThresholdHours, bool &warningTriggered);
 
 private:
@@ -34,8 +48,12 @@ private:
     float shuntVoltage_mV;
     float loadVoltage_V;
     float busVoltage_V;
-    float current_mA;
+    float current_mA;            // raw measured mA from last readSensors()
     float power_mW;
+
+    // Calibration params (applied to raw mA to get calibrated mA)
+    float calibrationGain;       // multiplier
+    float calibrationOffset_mA;  // additive offset in mA
 
     // Averaging buffer for run-flat time (in hours)
     static const int maxSamples = 180; // e.g. 30 minutes at 10s intervals
