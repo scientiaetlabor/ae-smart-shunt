@@ -223,9 +223,9 @@ String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningTh
     
     // Add "until flat" or "until full" based on charging state
     if (!charging) {
-        result += " until flat";
+        result += "until flat";
     } else {
-        result += " until full";
+        result += "until full";
     }
 
     return result;
