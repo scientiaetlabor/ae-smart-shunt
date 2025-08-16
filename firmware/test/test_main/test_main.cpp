@@ -125,9 +125,8 @@ void test_run_flat_time_formatted(void) {
 
         String result = adc.calculateRunFlatTimeFormatted(-10.0, 12.0, warning);
         TEST_ASSERT_EQUAL_STRING("5 hours until full", result.c_str());
-        // The warning is triggered even when charging, which might be a bug.
-        // For now, the test asserts the current behavior.
-        TEST_ASSERT(warning);
+        // The warning should not be triggered when charging.
+        TEST_ASSERT(!warning);
     }
 
     // Test fully charged (99.6Ah is >= 99.5% of 100Ah)
