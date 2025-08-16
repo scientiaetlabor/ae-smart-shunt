@@ -203,7 +203,7 @@ String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningTh
         return String("> 7 days");
     }
 
-    if (runHours <= warningThresholdHours) {
+    if (!charging && runHours <= warningThresholdHours) {
         warningTriggered = true;
     }
 
