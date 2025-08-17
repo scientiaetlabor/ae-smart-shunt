@@ -11,9 +11,11 @@
 // WiFi and OTA
 #include <WiFi.h>
 #include <WiFiClientSecure.h>
+#include <ota-github-cacerts.h>
+#include <ota-github-defaults.h>
 #define OTAGH_OWNER_NAME "Ace-s-Electronics"
 #define OTAGH_REPO_NAME "smart-shunt"
-#include <OTA-Hub-diy.hpp>
+#include <OTA-Hub.hpp>
 
 #define USE_ADC // if not defined, use victron BLE
 
