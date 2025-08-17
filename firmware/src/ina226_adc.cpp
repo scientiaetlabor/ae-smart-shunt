@@ -70,6 +70,10 @@ float INA226_ADC::getBatteryCapacity() const {
     return batteryCapacity;
 }
 
+void INA226_ADC::setBatteryCapacity(float capacity) {
+    batteryCapacity = capacity;
+}
+
 void INA226_ADC::setCalibration(float gain, float offset_mA) {
     calibrationGain = gain;
     calibrationOffset_mA = offset_mA;

@@ -1,5 +1,6 @@
 #include <vector>
 #include <Arduino.h>
+#include <Preferences.h>
 #include "shared_defs.h"
 #include "ina226_adc.h"
 #include "ble_handler.h"
@@ -24,12 +25,20 @@ float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used fo
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
+// OTA update check interval (24 hours)
+const unsigned long ota_check_interval = 24 * 60 * 60 * 1000; 
+unsigned long last_ota_check = 0;
+
+// Main loop interval
+const unsigned long loop_interval = 10000;
+unsigned long last_loop_millis = 0;
+
 struct_message_ae_smart_shunt_1 ae_smart_shunt_struct;
 INA226_ADC ina226_adc(I2C_ADDRESS, 0.0007191f, 100.00f); // shunt resistor, rated battery capacity
 ESPNowHandler espNowHandler(broadcastAddress);           // ESP-NOW handler for sending data
 WiFiClientSecure wifi_client;
 
-void handleOTA()
+bool handleOTA()
 {
     // 1. Check for updates, by checking the latest release on GitHub
     OTA::UpdateObject details = OTA::isUpdateAvailable();
@@ -37,12 +46,62 @@ void handleOTA()
     if (OTA::NO_UPDATE == details.condition)
     {
         Serial.println("No new update available. Continuing...");
+        return false;
     }
     else
     // 2. Perform the update (if there is one)
     {
+        Serial.println("Update available, saving battery capacity...");
+        Preferences preferences;
+        preferences.begin("storage", false);
+        float capacity = ina226_adc.getBatteryCapacity();
+        preferences.putFloat("bat_cap", capacity);
+        preferences.end();
+        Serial.printf("Saved battery capacity: %f\n", capacity);
+
         if (OTA::performUpdate(&details) == OTA::SUCCESS) {
             // .. success! It'll restart by default, or you can do other things here...
+            return true;
+        }
+    }
+    return false;
+}
+
+void daily_ota_check()
+{
+    if (millis() - last_ota_check > ota_check_interval)
+    {
+        // Notify the user that we are checking for updates
+        strncpy(ae_smart_shunt_struct.runFlatTime, "Checking for updates...", sizeof(ae_smart_shunt_struct.runFlatTime));
+        espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
+        espNowHandler.sendMessageAeSmartShunt();
+        delay(100); // Give a moment for the message to be sent
+
+        // Stop ESP-NOW to allow WiFi to connect
+        esp_now_deinit();
+
+        // WiFi connection
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+        Serial.print("Connecting to WiFi for OTA check");
+        while (WiFi.status() != WL_CONNECTED) {
+            Serial.print(".");
+            delay(500);
+        }
+        Serial.println("\nConnected to WiFi");
+
+        bool updated = handleOTA();
+        last_ota_check = millis();
+
+        WiFi.disconnect(true);
+        WiFi.mode(WIFI_OFF);
+        Serial.println("WiFi disconnected");
+
+        if (!updated) {
+            // Re-initialize ESP-NOW
+            if (!espNowHandler.begin())
+            {
+                Serial.println("ESP-NOW init failed after OTA check");
+            }
         }
     }
 }
@@ -287,6 +346,25 @@ void setup()
 
   ina226_adc.begin(6, 10);
 
+  // Check for and restore battery capacity from NVS
+  Preferences preferences;
+  preferences.begin("storage", true); // read-only
+  if (preferences.isKey("bat_cap")) {
+    float restored_capacity = preferences.getFloat("bat_cap", 0.0f);
+    preferences.end(); // close read-only
+    
+    ina226_adc.setBatteryCapacity(restored_capacity);
+    Serial.printf("Restored battery capacity: %f\n", restored_capacity);
+
+    // Now clear the key
+    preferences.begin("storage", false); // read-write
+    preferences.remove("bat_cap");
+    preferences.end();
+    Serial.println("Cleared battery capacity from NVS");
+  } else {
+    preferences.end();
+  }
+
   // Print calibration summary on boot
   Serial.println("Calibration summary:");
   for (int sh = 50; sh <= 500; sh += 50) {
@@ -331,92 +409,97 @@ void setup()
 
 void loop()
 {
+  daily_ota_check();
+
+  if (millis() - last_loop_millis > loop_interval)
+  {
 #ifdef USE_ADC
-  ina226_adc.readSensors();
+    ina226_adc.readSensors();
 
-  // Check serial for calibration command
-  if (Serial.available())
-  {
-    String s = Serial.readStringUntil('\n');
-    s.trim();
-    if (s.equalsIgnoreCase("c"))
+    // Check serial for calibration command
+    if (Serial.available())
     {
-      runCalibrationMenu(ina226_adc);
+      String s = Serial.readStringUntil('\n');
+      s.trim();
+      if (s.equalsIgnoreCase("c"))
+      {
+        runCalibrationMenu(ina226_adc);
+      }
+      // else ignore — keep running
     }
-    // else ignore — keep running
-  }
 
-  // Populate struct fields
-  ae_smart_shunt_struct.messageID = 11;
-  ae_smart_shunt_struct.dataChanged = true;
+    // Populate struct fields
+    ae_smart_shunt_struct.messageID = 11;
+    ae_smart_shunt_struct.dataChanged = true;
 
-  ae_smart_shunt_struct.batteryVoltage = ina226_adc.getBusVoltage_V();
-  ae_smart_shunt_struct.batteryCurrent = ina226_adc.getCurrent_mA() / 1000.0f;
-  ae_smart_shunt_struct.batteryPower = ina226_adc.getPower_mW() / 1000.0f;
+    ae_smart_shunt_struct.batteryVoltage = ina226_adc.getBusVoltage_V();
+    ae_smart_shunt_struct.batteryCurrent = ina226_adc.getCurrent_mA() / 1000.0f;
+    ae_smart_shunt_struct.batteryPower = ina226_adc.getPower_mW() / 1000.0f;
 
-  ae_smart_shunt_struct.batteryState = 0; // 0 = Normal, 1 = Warning, 2 = Critical
+    ae_smart_shunt_struct.batteryState = 0; // 0 = Normal, 1 = Warning, 2 = Critical
 
-  // Update remaining capacity in the INA226 helper (expects current in A)
-  ina226_adc.updateBatteryCapacity(ina226_adc.getCurrent_mA() / 1000.0f);
+    // Update remaining capacity in the INA226 helper (expects current in A)
+    ina226_adc.updateBatteryCapacity(ina226_adc.getCurrent_mA() / 1000.0f);
 
-  // Get remaining Ah from INA helper
-  float remainingAh = ina226_adc.getBatteryCapacity();
-  ae_smart_shunt_struct.batteryCapacity = remainingAh; // remaining capacity in Ah
-  // batteryCapacity global holds the rated capacity in Ah for SOC calculation
-  if (batteryCapacity > 0.0f)
-  {
-    ae_smart_shunt_struct.batterySOC = remainingAh / batteryCapacity; // fraction 0..1
-  }
-  else
-  {
-    ae_smart_shunt_struct.batterySOC = 0.0f;
-  }
+    // Get remaining Ah from INA helper
+    float remainingAh = ina226_adc.getBatteryCapacity();
+    ae_smart_shunt_struct.batteryCapacity = remainingAh; // remaining capacity in Ah
+    // batteryCapacity global holds the rated capacity in Ah for SOC calculation
+    if (batteryCapacity > 0.0f)
+    {
+      ae_smart_shunt_struct.batterySOC = remainingAh / batteryCapacity; // fraction 0..1
+    }
+    else
+    {
+      ae_smart_shunt_struct.batterySOC = 0.0f;
+    }
 
-  if (ina226_adc.isOverflow())
-  {
-    Serial.println("Overflow! Choose higher current range");
-    ae_smart_shunt_struct.batteryState = 3; // overflow indicator
-  }
+    if (ina226_adc.isOverflow())
+    {
+      Serial.println("Overflow! Choose higher current range");
+      ae_smart_shunt_struct.batteryState = 3; // overflow indicator
+    }
 
-  // Calculate and print run-flat time with warning threshold
-  bool warning = false;
-  float currentA = ina226_adc.getCurrent_mA() / 1000.0f; // convert mA to A
-  float warningThresholdHours = 10.0f;
+    // Calculate and print run-flat time with warning threshold
+    bool warning = false;
+    float currentA = ina226_adc.getCurrent_mA() / 1000.0f; // convert mA to A
+    float warningThresholdHours = 10.0f;
 
-  String avgRunFlatTimeStr = ina226_adc.getAveragedRunFlatTime(currentA, warningThresholdHours, warning);
+    String avgRunFlatTimeStr = ina226_adc.getAveragedRunFlatTime(currentA, warningThresholdHours, warning);
 
-  strncpy(ae_smart_shunt_struct.runFlatTime, avgRunFlatTimeStr.c_str(), sizeof(ae_smart_shunt_struct.runFlatTime));
-  ae_smart_shunt_struct.runFlatTime[sizeof(ae_smart_shunt_struct.runFlatTime) - 1] = '\0'; // ensure null termination
+    strncpy(ae_smart_shunt_struct.runFlatTime, avgRunFlatTimeStr.c_str(), sizeof(ae_smart_shunt_struct.runFlatTime));
+    ae_smart_shunt_struct.runFlatTime[sizeof(ae_smart_shunt_struct.runFlatTime) - 1] = '\0'; // ensure null termination
 
 #else
-  // Code to use victron BLE
-  bleHandler.startScan(scanTime);
+    // Code to use victron BLE
+    bleHandler.startScan(scanTime);
 
-  // Provide safe defaults so struct is still valid
-  ae_smart_shunt_struct.messageID = 0;
-  ae_smart_shunt_struct.dataChanged = false;
-  ae_smart_shunt_struct.batteryVoltage = 0.0f;
-  ae_smart_shunt_struct.batteryCurrent = 0.0f;
-  ae_smart_shunt_struct.batteryPower = 0.0f;
-  ae_smart_shunt_struct.batteryCapacity = 0.0f;
-  ae_smart_shunt_struct.batterySOC = 0.0f;
-  ae_smart_shunt_struct.batteryState = 0;
-  strncpy(ae_smart_shunt_struct.runFlatTime, "N/A", sizeof(ae_smart_shunt_struct.runFlatTime));
+    // Provide safe defaults so struct is still valid
+    ae_smart_shunt_struct.messageID = 0;
+    ae_smart_shunt_struct.dataChanged = false;
+    ae_smart_shunt_struct.batteryVoltage = 0.0f;
+    ae_smart_shunt_struct.batteryCurrent = 0.0f;
+    ae_smart_shunt_struct.batteryPower = 0.0f;
+    ae_smart_shunt_struct.batteryCapacity = 0.0f;
+    ae_smart_shunt_struct.batterySOC = 0.0f;
+    ae_smart_shunt_struct.batteryState = 0;
+    strncpy(ae_smart_shunt_struct.runFlatTime, "N/A", sizeof(ae_smart_shunt_struct.runFlatTime));
 #endif
 
-  // Send the data via ESP-NOW
-  espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
-  espNowHandler.sendMessageAeSmartShunt();
+    // Send the data via ESP-NOW
+    espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
+    espNowHandler.sendMessageAeSmartShunt();
 
 #ifdef USE_ADC
-  Serial.print("Average estimated run-flat time: ");
-  Serial.println(String(ae_smart_shunt_struct.runFlatTime));
-  if (ina226_adc.isOverflow())
-  {
-    Serial.println("Warning: Overflow condition!");
-  }
+    Serial.print("Average estimated run-flat time: ");
+    Serial.println(String(ae_smart_shunt_struct.runFlatTime));
+    if (ina226_adc.isOverflow())
+    {
+      Serial.println("Warning: Overflow condition!");
+    }
 #endif
 
-  Serial.println();
-  delay(10000);
+    Serial.println();
+    last_loop_millis = millis();
+  }
 }
