@@ -18,6 +18,7 @@ public:
     float getPower_mW() const;
     float getLoadVoltage_V() const;
     float getBatteryCapacity() const;
+    void setBatteryCapacity(float capacity);
     void updateBatteryCapacity(float currentA); // current in A (positive = discharge)
     bool isOverflow() const;
     String getAveragedRunFlatTime(float currentA, float warningThresholdHours, bool &warningTriggered);
