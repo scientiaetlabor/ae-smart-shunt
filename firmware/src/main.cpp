@@ -13,8 +13,8 @@
 #include <WiFiClientSecure.h>
 #include <ota-github-cacerts.h>
 #include <ota-github-defaults.h>
-#define OTAGH_OWNER_NAME "Ace-s-Electronics"
-#define OTAGH_REPO_NAME "smart-shunt"
+#define OTAGH_OWNER_NAME "Aces-Electronics"
+#define OTAGH_REPO_NAME "ae-smart-shunt"
 #include <OTA-Hub.hpp>
 
 #define USE_ADC // if defined, use ADC, else, victron BLE
@@ -282,6 +282,7 @@ void setup()
   // Initialise OTA
   wifi_client.setCACert(OTAGH_CA_CERT); // Set the api.github.com SSL cert on the WiFi Client
   OTA::init(wifi_client);
+  handleOTA();
 #endif
 
   ina226_adc.begin(6, 10);
@@ -330,8 +331,6 @@ void setup()
 
 void loop()
 {
-  handleOTA();
-
 #ifdef USE_ADC
   ina226_adc.readSensors();
 

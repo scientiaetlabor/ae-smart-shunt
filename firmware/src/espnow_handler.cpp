@@ -2,6 +2,12 @@
 #include "esp_err.h"
 #include <cstring>
 
+// 🔒 Compile-time check: catch padding/alignment mismatches.
+// Update "EXPECTED_AE_SMART_SHUNT_STRUCT_SIZE" if your struct changes.
+#define EXPECTED_AE_SMART_SHUNT_STRUCT_SIZE 69   // <-- adjust to your intended size
+static_assert(sizeof(struct_message_ae_smart_shunt_1) == EXPECTED_AE_SMART_SHUNT_STRUCT_SIZE,
+              "struct_message_ae_smart_shunt_1 has unexpected size! Possible padding/alignment issue.");
+
 ESPNowHandler::ESPNowHandler(const uint8_t *broadcastAddr)
 {
     memcpy(broadcastAddress, broadcastAddr, 6);
@@ -29,24 +35,32 @@ void ESPNowHandler::sendMessageAeSmartShunt()
     uint8_t *data = (uint8_t *)&localAeSmartShuntStruct;
     size_t len = sizeof(localAeSmartShuntStruct);
 
-    Serial.print("Sending data (len=");
-    Serial.print(len);
-    Serial.print("): ");
+    Serial.printf("Struct size: %d bytes\n", len);
+
+    Serial.print("Sending to MAC: ");
+    printMacAddress(broadcastAddress);
+
+    Serial.print("Sending data (hex): ");
     for (size_t i = 0; i < len; i++)
     {
         Serial.printf("%02X ", data[i]);
+    }
+
+    Serial.print(" | ASCII: ");
+    for (size_t i = 0; i < len; i++)
+    {
+        char c = data[i];
+        Serial.print(isprint(c) ? c : '.');
     }
     Serial.println();
 
     esp_err_t result = esp_now_send(broadcastAddress, data, len);
     if (result == ESP_OK)
     {
-        Serial.println("Sent AeSmartShunt message successfully");
+        Serial.println("Sent AE Smart Shunt message successfully");
     }
     else
     {
-        Serial.print("Broadcast Address: ");
-        printMacAddress(broadcastAddress);
         Serial.print("Error sending AeSmartShunt data: ");
         Serial.println(esp_err_to_name(result));
     }
