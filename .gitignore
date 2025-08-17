@@ -6,3 +6,4 @@
 .DS_Store
 hardware/smart_shunt_v0.0.1-backups/
 firmware/src/password.cpp
+firmware/src/password.h
