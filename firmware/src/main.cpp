@@ -7,6 +7,14 @@
 #include "passwords.h"
 #include <esp_now.h>
 #include <esp_err.h>
+
+// WiFi and OTA
+#include <WiFi.h>
+#include <WiFiClientSecure.h>
+#define OTAGH_OWNER_NAME "Ace-s-Electronics"
+#define OTAGH_REPO_NAME "smart-shunt"
+#include <OTA-Hub-diy.hpp>
+
 #define USE_ADC // if not defined, use victron BLE
 
 float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used for SOC calc)
@@ -16,6 +24,25 @@ uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 struct_message_ae_smart_shunt_1 ae_smart_shunt_struct;
 INA226_ADC ina226_adc(I2C_ADDRESS, 0.0007191f, 100.00f); // shunt resistor, rated battery capacity
 ESPNowHandler espNowHandler(broadcastAddress);           // ESP-NOW handler for sending data
+WiFiClientSecure wifi_client;
+
+void handleOTA()
+{
+    // 1. Check for updates, by checking the latest release on GitHub
+    OTA::UpdateObject details = OTA::isUpdateAvailable();
+
+    if (OTA::NO_UPDATE == details.condition)
+    {
+        Serial.println("No new update available. Continuing...");
+    }
+    else
+    // 2. Perform the update (if there is one)
+    {
+        if (OTA::performUpdate(&details) == OTA::SUCCESS) {
+            // .. success! It'll restart by default, or you can do other things here...
+        }
+    }
+}
 
 // helper: read a trimmed line from Serial (blocks until newline)
 static String SerialReadLineBlocking()
@@ -239,6 +266,19 @@ void setup()
   Serial.begin(115200);
   delay(100); // let Serial start
 
+  // WiFi connection
+  WiFi.begin(WIFI_SSID, WIFI_PASS);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(500);
+  }
+  Serial.println("\nConnected to WiFi");
+
+  // Initialise OTA
+  wifi_client.setCACert(OTAGH_CA_CERT); // Set the api.github.com SSL cert on the WiFi Client
+  OTA::init(wifi_client);
+
   ina226_adc.begin(6, 10);
 
   // Print calibration summary on boot
@@ -285,6 +325,8 @@ void setup()
 
 void loop()
 {
+  handleOTA();
+
 #ifdef USE_ADC
   ina226_adc.readSensors();
 
