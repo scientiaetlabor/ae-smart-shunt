@@ -19,14 +19,14 @@
 #include <OTA-Hub.hpp>
 
 #define USE_ADC // if defined, use ADC, else, victron BLE
-//#define USE_WIFI // if defined, conect to WIFI, else, don't
+// #define USE_WIFI // if defined, conect to WIFI, else, don't
 
 float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used for SOC calc)
 
 uint8_t broadcastAddress[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 
 // OTA update check interval (24 hours)
-const unsigned long ota_check_interval = 24 * 60 * 60 * 1000; 
+const unsigned long ota_check_interval = 24 * 60 * 60 * 1000;
 unsigned long last_ota_check = 0;
 
 // Main loop interval
@@ -34,76 +34,81 @@ const unsigned long loop_interval = 10000;
 unsigned long last_loop_millis = 0;
 
 struct_message_ae_smart_shunt_1 ae_smart_shunt_struct;
-INA226_ADC ina226_adc(I2C_ADDRESS, 0.0007191f, 100.00f); // shunt resistor, rated battery capacity
-ESPNowHandler espNowHandler(broadcastAddress);           // ESP-NOW handler for sending data
+// Initializing with a default shunt resistor value, which will be overwritten
+// if a calibrated value is loaded from NVS.
+INA226_ADC ina226_adc(I2C_ADDRESS, 0.000944464f, 100.00f);
+ESPNowHandler espNowHandler(broadcastAddress); // ESP-NOW handler for sending data
 WiFiClientSecure wifi_client;
 
 bool handleOTA()
 {
-    // 1. Check for updates, by checking the latest release on GitHub
-    OTA::UpdateObject details = OTA::isUpdateAvailable();
+  // 1. Check for updates, by checking the latest release on GitHub
+  OTA::UpdateObject details = OTA::isUpdateAvailable();
 
-    if (OTA::NO_UPDATE == details.condition)
-    {
-        Serial.println("No new update available. Continuing...");
-        return false;
-    }
-    else
-    // 2. Perform the update (if there is one)
-    {
-        Serial.println("Update available, saving battery capacity...");
-        Preferences preferences;
-        preferences.begin("storage", false);
-        float capacity = ina226_adc.getBatteryCapacity();
-        preferences.putFloat("bat_cap", capacity);
-        preferences.end();
-        Serial.printf("Saved battery capacity: %f\n", capacity);
-
-        if (OTA::performUpdate(&details) == OTA::SUCCESS) {
-            // .. success! It'll restart by default, or you can do other things here...
-            return true;
-        }
-    }
+  if (OTA::NO_UPDATE == details.condition)
+  {
+    Serial.println("No new update available. Continuing...");
     return false;
+  }
+  else
+  // 2. Perform the update (if there is one)
+  {
+    Serial.println("Update available, saving battery capacity...");
+    Preferences preferences;
+    preferences.begin("storage", false);
+    float capacity = ina226_adc.getBatteryCapacity();
+    preferences.putFloat("bat_cap", capacity);
+    preferences.end();
+    Serial.printf("Saved battery capacity: %f\n", capacity);
+
+    if (OTA::performUpdate(&details) == OTA::SUCCESS)
+    {
+      // .. success! It'll restart by default, or you can do other things here...
+      return true;
+    }
+  }
+  return false;
 }
 
 void daily_ota_check()
 {
-    if (millis() - last_ota_check > ota_check_interval)
+  if (millis() - last_ota_check > ota_check_interval)
+  {
+    // Notify the user that we are checking for updates
+    strncpy(ae_smart_shunt_struct.runFlatTime, "Checking for updates...", sizeof(ae_smart_shunt_struct.runFlatTime));
+    espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
+    espNowHandler.sendMessageAeSmartShunt();
+    delay(100); // Give a moment for the message to be sent
+
+    // Stop ESP-NOW to allow WiFi to connect
+    esp_now_deinit();
+
+    // WiFi connection
+    WiFi.begin(WIFI_SSID, WIFI_PASS);
+    Serial.print("Connecting to WiFi for OTA check");
+    while (WiFi.status() != WL_CONNECTED)
     {
-        // Notify the user that we are checking for updates
-        strncpy(ae_smart_shunt_struct.runFlatTime, "Checking for updates...", sizeof(ae_smart_shunt_struct.runFlatTime));
-        espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
-        espNowHandler.sendMessageAeSmartShunt();
-        delay(100); // Give a moment for the message to be sent
-
-        // Stop ESP-NOW to allow WiFi to connect
-        esp_now_deinit();
-
-        // WiFi connection
-        WiFi.begin(WIFI_SSID, WIFI_PASS);
-        Serial.print("Connecting to WiFi for OTA check");
-        while (WiFi.status() != WL_CONNECTED) {
-            Serial.print(".");
-            delay(500);
-        }
-        Serial.println("\nConnected to WiFi");
-
-        bool updated = handleOTA();
-        last_ota_check = millis();
-
-        WiFi.disconnect(true);
-        WiFi.mode(WIFI_OFF);
-        Serial.println("WiFi disconnected");
-
-        if (!updated) {
-            // Re-initialize ESP-NOW
-            if (!espNowHandler.begin())
-            {
-                Serial.println("ESP-NOW init failed after OTA check");
-            }
-        }
+      Serial.print(".");
+      delay(500);
     }
+    Serial.println("\nConnected to WiFi");
+
+    bool updated = handleOTA();
+    last_ota_check = millis();
+
+    WiFi.disconnect(true);
+    WiFi.mode(WIFI_OFF);
+    Serial.println("WiFi disconnected");
+
+    if (!updated)
+    {
+      // Re-initialize ESP-NOW
+      if (!espNowHandler.begin())
+      {
+        Serial.println("ESP-NOW init failed after OTA check");
+      }
+    }
+  }
 }
 
 // helper: read a trimmed line from Serial (blocks until newline)
@@ -169,11 +174,11 @@ static String waitForEnterOrXWithDebug(INA226_ADC &ina, bool debugMode)
   }
 }
 
-// Run calibration via Serial UI
-void runCalibrationMenu(INA226_ADC &ina)
+// Renamed from runCalibrationMenu to be more specific
+void runCurrentCalibrationMenu(INA226_ADC &ina)
 {
-  Serial.println(F("\n--- Calibration Menu ---"));
-  Serial.println(F("Choose installed shunt rating (50..500 A in 50A steps) or 'x' to cancel:"));
+  Serial.println(F("\n--- Current Calibration Menu ---"));
+  Serial.println(F("Choose installed shunt rating (50-500 A in 50A steps) or 'x' to cancel:"));
   Serial.print(F("> "));
 
   String sel = SerialReadLineBlocking();
@@ -190,17 +195,27 @@ void runCalibrationMenu(INA226_ADC &ina)
     return;
   }
 
-  // Load existing calibration for that shunt (if any) so user can see values
-  bool had = ina.loadCalibration(shuntA);
+  // Show existing linear + table calibration (if any)
   float g0, o0;
+  bool hadLinear = ina.loadCalibration(shuntA);
   ina.getCalibration(g0, o0);
-  if (had)
+
+  size_t storedCount = 0;
+  bool hasTableStored = ina.hasStoredCalibrationTable(shuntA, storedCount);
+  bool hasTableRAM = ina.loadCalibrationTable(shuntA);
+
+  if (hadLinear)
+    Serial.printf("Loaded LINEAR calibration for %dA: gain=%.9f offset_mA=%.3f\n", shuntA, g0, o0);
+  else
+    Serial.printf("No stored LINEAR calibration for %dA. Using defaults gain=%.9f offset_mA=%.3f\n", shuntA, g0, o0);
+
+  if (hasTableStored)
   {
-    Serial.printf("Loaded stored calibration for %dA: gain=%.9f offset_mA=%.3f\n", shuntA, g0, o0);
+    Serial.printf("Found TABLE calibration for %dA with %u points. Loaded into RAM.\n", shuntA, (unsigned)storedCount);
   }
   else
   {
-    Serial.printf("No stored calibration for %dA. Using defaults gain=%.9f offset_mA=%.3f\n", shuntA, g0, o0);
+    Serial.printf("No TABLE calibration stored for %dA.\n", shuntA);
   }
 
   // Ask if user wants live debug streaming while waiting for each step
@@ -211,11 +226,14 @@ void runCalibrationMenu(INA226_ADC &ina)
 
   // build measurement percentages
   std::vector<float> perc;
-  perc.push_back(0.01f);
-  perc.push_back(0.05f);
-  perc.push_back(0.10f);
-  for (int p = 20; p <= 100; p += 10)
-    perc.push_back(p / 100.0f);
+  perc.push_back(0.0005f); // 0.05%
+  perc.push_back(0.001f);  // 0.1%
+  perc.push_back(0.01f);   // 1%
+  perc.push_back(0.02f);   // 2%
+  perc.push_back(0.05f);   // 5%
+  perc.push_back(0.10f);   // 10%
+  perc.push_back(0.25f);   // 25%
+  perc.push_back(0.50f);   // 50%
 
   std::vector<float> measured_mA;
   std::vector<float> true_mA;
@@ -225,8 +243,9 @@ void runCalibrationMenu(INA226_ADC &ina)
     float p = perc[i];
     float trueA = shuntA * p;
     float true_milli = trueA * 1000.0f;
-    Serial.printf("\nStep %u of %u: Target = %.3f A (%.1f%% of %dA).\nSet test jig to the target current, then press Enter to record. Enter 'x' to cancel and accept measured so far.\n",
+    Serial.printf("\nStep %u of %u: Target = %.3f A (%.2f%% of %dA).\nSet test jig to the target current, then press Enter to record. Enter 'x' to cancel and accept measured so far.\n",
                   (unsigned)(i + 1), (unsigned)perc.size(), trueA, p * 100.0f, shuntA);
+
     Serial.print("> ");
 
     // Wait for Enter or 'x', printing debug stream if enabled.
@@ -262,59 +281,116 @@ void runCalibrationMenu(INA226_ADC &ina)
     return;
   }
 
-  // Fit linear model y = a*x + b where y=true_mA, x=measured_mA
-  float gain = 1.0f;
-  float offset_mA = 0.0f;
-
-  if (N == 1)
+  // -------- Build & save calibration TABLE (piecewise linear) --------
+  std::vector<CalPoint> points;
+  points.reserve(N);
+  for (size_t i = 0; i < N; ++i)
   {
-    // Single point: set gain to match magnitude, offset 0
-    if (measured_mA[0] != 0.0f)
-    {
-      gain = true_mA[0] / measured_mA[0];
-      offset_mA = 0.0f;
-    }
-    else
-    {
-      gain = 1.0f;
-      offset_mA = true_mA[0]; // degenerate: raw zero, put offset
-    }
+    points.push_back({measured_mA[i], true_mA[i]});
+    Serial.printf("Point %u: raw=%.3f mA -> true=%.3f mA\n", (unsigned)i, measured_mA[i], true_mA[i]);
+  }
+
+  // Wipe any existing calibration for this shunt before saving new one
+  ina.clearCalibrationTable(shuntA);
+
+  // Save table (this also sorts/dedups internally and loads into RAM)
+  if (ina.saveCalibrationTable(shuntA, points))
+  {
+    Serial.println("\nCalibration complete (TABLE).");
+    Serial.printf("Saved %u calibration points for %dA shunt.\n", (unsigned)points.size(), shuntA);
   }
   else
   {
-    // Least squares
-    double sum_x = 0, sum_y = 0, sum_xx = 0, sum_xy = 0;
-    for (size_t i = 0; i < N; ++i)
+    Serial.println("\nCalibration failed: no points saved.");
+  }
+
+  Serial.println("These values are persisted and will be applied to subsequent current readings.");
+}
+
+// New function to handle shunt resistance calibration
+void runShuntResistanceCalibration(INA226_ADC &ina)
+{
+  Serial.println(F("\n--- Shunt Resistance Calibration ---"));
+  Serial.println(F("Ensure a constant current load is applied."));
+  Serial.println(F("This routine will calculate the actual shunt resistance based on measured shunt voltage at various current levels."));
+
+  // Define the sweep of constant current loads in Amps
+  std::vector<float> current_loads = {0.1f, 0.5f, 1.0f, 2.0f, 5.0f, 10.0f}; // A
+  std::vector<float> measured_voltages;                                     // Store measured voltages in mV
+
+  Serial.println(F("\nFollow the prompts to apply each constant current load."));
+  Serial.println(F("Press 'Enter' after applying the load to take a measurement."));
+  Serial.println(F("Press 'x' at any time to cancel."));
+
+  for (size_t i = 0; i < current_loads.size(); ++i)
+  {
+    float current_A = current_loads[i];
+    Serial.printf("\nStep %u of %u: Apply a constant current load of %.2f A.\n",
+                  (unsigned)(i + 1), (unsigned)current_loads.size(), current_A);
+
+    Serial.print("> ");
+    String line = waitForEnterOrXWithDebug(ina, false); // Use waitForEnterOrXWithDebug for user input
+    if (line.equalsIgnoreCase("x"))
     {
-      double x = measured_mA[i];
-      double y = true_mA[i];
-      sum_x += x;
-      sum_y += y;
-      sum_xx += x * x;
-      sum_xy += x * y;
+      Serial.println(F("Shunt resistance calibration canceled."));
+      return;
     }
-    double denom = (N * sum_xx - sum_x * sum_x);
-    if (fabs(denom) < 1e-12)
+
+    // Take a short average of voltage measurements
+    const int samples = 8;
+    float sumShuntVoltage_mV = 0.0f;
+    for (int s = 0; s < samples; ++s)
     {
-      // fallback
-      float mean_x = sum_x / (double)N;
-      float mean_y = sum_y / (double)N;
-      gain = (mean_x != 0.0) ? (mean_y / mean_x) : 1.0f;
-      offset_mA = 0.0f;
+      ina.readSensors();
+      sumShuntVoltage_mV += ina.getShuntVoltage_mV();
+      delay(120);
     }
-    else
-    {
-      gain = (float)((N * sum_xy - sum_x * sum_y) / denom);
-      offset_mA = (float)((sum_y - gain * sum_x) / (double)N);
+    float avgShuntVoltage_mV = sumShuntVoltage_mV / (float)samples;
+
+    Serial.printf("Recorded avg shunt voltage: %.3f mV (at %.2f A)\n", avgShuntVoltage_mV, current_A);
+    measured_voltages.push_back(avgShuntVoltage_mV);
+  }
+
+  // Calculate the shunt resistance using Ohm's Law (R = V/I) for each data point
+  // Then, average the results for a more stable value.
+  float sumOhms = 0.0f;
+  size_t valid_measurements = 0;
+  for (size_t i = 0; i < current_loads.size(); ++i)
+  {
+    if (current_loads[i] > 0)
+    { // Avoid division by zero
+      // Convert mV to V for resistance calculation
+      float voltage_V = measured_voltages[i] / 1000.0f;
+      float resistance_Ohms = voltage_V / current_loads[i];
+      sumOhms += resistance_Ohms;
+      valid_measurements++;
+      Serial.printf("Calculation %u: %.3f V / %.2f A = %.9f Ohms\n",
+                    (unsigned)(i + 1), voltage_V, current_loads[i], resistance_Ohms);
     }
   }
 
-  // Save calibration
-  ina.saveCalibration(shuntA, gain, offset_mA);
+  if (valid_measurements > 0)
+  {
+    float newShuntOhms = sumOhms / valid_measurements;
 
-  Serial.println("\nCalibration complete.");
-  Serial.printf("Final calibration for %dA: gain = %.9f, offset_mA = %.3f\n", shuntA, gain, offset_mA);
-  Serial.println("These values are persisted and will be applied to subsequent current readings.");
+    // Save the new resistance
+    ina.saveShuntResistance(newShuntOhms);
+    Serial.printf("\nCalculated new average shunt resistance: %.9f Ohms.\n", newShuntOhms);
+    Serial.println("This value has been saved and will be used for all future calculations.");
+  }
+  else
+  {
+    Serial.println("\nNo valid measurements were taken. Shunt resistance calibration failed.");
+  }
+
+  // Prompt to run current calibration
+  Serial.println(F("\nShunt resistance calibration is complete. Would you like to run the current calibration now? (y/N)"));
+  Serial.print(F("> "));
+  String response = SerialReadLineBlocking();
+  if (response.equalsIgnoreCase("y"))
+  {
+    runCurrentCalibrationMenu(ina);
+  }
 }
 
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
@@ -332,7 +408,8 @@ void setup()
   // WiFi connection
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.print("Connecting to WiFi");
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(".");
     delay(500);
   }
@@ -344,15 +421,17 @@ void setup()
   handleOTA();
 #endif
 
+  // The begin method now handles loading the calibrated resistance
   ina226_adc.begin(6, 10);
 
   // Check for and restore battery capacity from NVS
   Preferences preferences;
   preferences.begin("storage", true); // read-only
-  if (preferences.isKey("bat_cap")) {
+  if (preferences.isKey("bat_cap"))
+  {
     float restored_capacity = preferences.getFloat("bat_cap", 0.0f);
     preferences.end(); // close read-only
-    
+
     ina226_adc.setBatteryCapacity(restored_capacity);
     Serial.printf("Restored battery capacity: %f\n", restored_capacity);
 
@@ -361,24 +440,40 @@ void setup()
     preferences.remove("bat_cap");
     preferences.end();
     Serial.println("Cleared battery capacity from NVS");
-  } else {
+  }
+  else
+  {
     preferences.end();
   }
 
   // Print calibration summary on boot
   Serial.println("Calibration summary:");
-  for (int sh = 50; sh <= 500; sh += 50) {
+  for (int sh = 50; sh <= 500; sh += 50)
+  {
     float g, o;
-    if (ina226_adc.getStoredCalibrationForShunt(sh, g, o)) {
-      Serial.printf("  %dA: gain=%.9f offset_mA=%.3f\n", sh, g, o);
-    } else {
+    size_t cnt = 0;
+    bool hasTbl = ina226_adc.hasStoredCalibrationTable(sh, cnt);
+    bool hasLin = ina226_adc.getStoredCalibrationForShunt(sh, g, o);
+    if (hasTbl)
+    {
+      Serial.printf("  %dA: TABLE present (%u pts)", sh, (unsigned)cnt);
+      if (hasLin)
+        Serial.printf(", linear fallback gain=%.6f offset_mA=%.3f", g, o);
+      Serial.println();
+    }
+    else if (hasLin)
+    {
+      Serial.printf("  %dA: LINEAR gain=%.6f offset_mA=%.3f\n", sh, g, o);
+    }
+    else
+    {
       Serial.printf("  %dA: No saved calibration (using defaults)\n", sh);
     }
   }
-  // Also print currently applied calibration (if any)
+  // Also print currently applied linear calibration (table is runtime-based)
   float curG, curO;
   ina226_adc.getCalibration(curG, curO);
-  Serial.printf("Active calibration: gain=%.9f offset_mA=%.3f\n", curG, curO);
+  Serial.printf("Active linear fallback: gain=%.9f offset_mA=%.3f\n", curG, curO);
 
   // Initialize ESP-NOW
   if (!espNowHandler.begin())
@@ -411,22 +506,28 @@ void loop()
 {
   daily_ota_check();
 
+  // Check serial for calibration command
+  if (Serial.available())
+  {
+    String s = Serial.readStringUntil('\n');
+    s.trim();
+    if (s.equalsIgnoreCase("c"))
+    {
+      // run the current calibration menu
+      runCurrentCalibrationMenu(ina226_adc);
+    }
+    else if (s.equalsIgnoreCase("r"))
+    {
+      // run the new shunt resistance calibration
+      runShuntResistanceCalibration(ina226_adc);
+    }
+    // else ignore — keep running
+  }
+
   if (millis() - last_loop_millis > loop_interval)
   {
 #ifdef USE_ADC
     ina226_adc.readSensors();
-
-    // Check serial for calibration command
-    if (Serial.available())
-    {
-      String s = Serial.readStringUntil('\n');
-      s.trim();
-      if (s.equalsIgnoreCase("c"))
-      {
-        runCalibrationMenu(ina226_adc);
-      }
-      // else ignore — keep running
-    }
 
     // Populate struct fields
     ae_smart_shunt_struct.messageID = 11;
