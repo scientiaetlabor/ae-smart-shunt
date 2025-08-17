@@ -40,18 +40,18 @@ void ESPNowHandler::sendMessageAeSmartShunt()
     Serial.print("Sending to MAC: ");
     printMacAddress(broadcastAddress);
 
-    Serial.print("Sending data (hex): ");
-    for (size_t i = 0; i < len; i++)
-    {
-        Serial.printf("%02X ", data[i]);
-    }
+    // Serial.print("Sending data (hex): ");
+    // for (size_t i = 0; i < len; i++)
+    // {
+    //     Serial.printf("%02X ", data[i]);
+    // }
 
-    Serial.print(" | ASCII: ");
-    for (size_t i = 0; i < len; i++)
-    {
-        char c = data[i];
-        Serial.print(isprint(c) ? c : '.');
-    }
+    // Serial.print(" | ASCII: ");
+    // for (size_t i = 0; i < len; i++)
+    // {
+    //     char c = data[i];
+    //     Serial.print(isprint(c) ? c : '.');
+    // }
     Serial.println();
 
     esp_err_t result = esp_now_send(broadcastAddress, data, len);

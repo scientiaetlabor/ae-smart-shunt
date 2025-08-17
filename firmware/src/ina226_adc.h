@@ -1,3 +1,4 @@
+// ina_226_adc.h:
 #ifndef INA226_ADC_H
 #define INA226_ADC_H
 
@@ -5,6 +6,12 @@
 #include <Wire.h>
 #include <Arduino.h>
 #include <Preferences.h>
+#include <vector>
+
+struct CalPoint {
+    float raw_mA;   // raw measured current from INA226 (mA)
+    float true_mA;  // ground-truth current (mA)
+};
 
 class INA226_ADC {
 public:
@@ -13,7 +20,7 @@ public:
     void readSensors();
     float getShuntVoltage_mV() const;
     float getBusVoltage_V() const;
-    float getCurrent_mA() const;      // calibrated current (mA)
+    float getCurrent_mA() const;      // calibrated current (mA) using table when present, else linear
     float getRawCurrent_mA() const;   // raw measured current (mA) from INA226
     float getPower_mW() const;
     float getLoadVoltage_V() const;
@@ -21,48 +28,48 @@ public:
     void setBatteryCapacity(float capacity);
     void updateBatteryCapacity(float currentA); // current in A (positive = discharge)
     bool isOverflow() const;
+    bool clearCalibrationTable(uint16_t shuntRatedA);
     String getAveragedRunFlatTime(float currentA, float warningThresholdHours, bool &warningTriggered);
 
-    // Calibration APIs
-    // Try to load persisted calibration for the given shunt rating.
-    // Returns true if a persisted calibration was found and applied; false otherwise.
-    bool loadCalibration(uint16_t shuntRatedA);
-    // Persist calibration for a shunt rating
+    // New shunt resistance calibration methods
+    bool saveShuntResistance(float resistance);
+    bool loadShuntResistance();
+
+    // ---------- Linear calibration (legacy / fallback) ----------
+    bool loadCalibration(uint16_t shuntRatedA);                          // apply stored linear (gain/offset)
     bool saveCalibration(uint16_t shuntRatedA, float gain, float offset_mA);
-    // Set/get in-memory calibration
     void setCalibration(float gain, float offset_mA);
     void getCalibration(float &gainOut, float &offsetOut) const;
-    // Query stored calibration without applying it; returns true if entry exists.
     bool getStoredCalibrationForShunt(uint16_t shuntRatedA, float &gainOut, float &offsetOut) const;
 
-    // Format run-flat time from current and return string
-    String calculateRunFlatTimeFormatted(float currentA, float warningThresholdHours, bool &warningTriggered);
+    // ---------- Table calibration (preferred) ----------
+    // Save/load a piecewise calibration table for the given shunt
+    bool saveCalibrationTable(uint16_t shuntRatedA, const std::vector<CalPoint> &points);
+    bool loadCalibrationTable(uint16_t shuntRatedA);                     // loads into RAM; returns true if found
+    bool hasCalibrationTable() const;                                    // RAM presence
+    bool hasStoredCalibrationTable(uint16_t shuntRatedA, size_t &countOut) const;
 
 private:
     INA226_WE ina226;
-    float ohms;
-
-    float batteryCapacity;       // remaining capacity in Ah
-    float maxBatteryCapacity;    // rated max capacity in Ah
-
+    float defaultOhms;      // Original default shunt resistance
+    float calibratedOhms;   // Calibrated shunt resistance
+    float batteryCapacity;
+    float maxBatteryCapacity;
     unsigned long lastUpdateTime;
-    float shuntVoltage_mV;
-    float loadVoltage_V;
-    float busVoltage_V;
-    float current_mA;            // raw measured mA from last readSensors()
-    float power_mW;
+    float shuntVoltage_mV, loadVoltage_V, busVoltage_V, current_mA, power_mW;
+    float calibrationGain, calibrationOffset_mA;
 
-    // Calibration params (applied to raw mA to get calibrated mA)
-    float calibrationGain;       // multiplier
-    float calibrationOffset_mA;  // additive offset in mA
+    // Table-based calibration
+    std::vector<CalPoint> calibrationTable;
+    float getCalibratedCurrent_mA(float raw_mA) const;
 
-    // Averaging buffer for run-flat time (in hours)
-    static const int maxSamples = 180; // e.g. 30 minutes at 10s intervals
+    // run-flat time averaging
+    const static int maxSamples = 10;
     float runFlatSamples[maxSamples];
-    int sampleIndex = 0;
-    int sampleCount = 0;
-    unsigned long lastSampleTime = 0;
-    int sampleIntervalSeconds = 10; // sampling interval in seconds
+    int sampleIndex;
+    int sampleCount;
+    unsigned long lastSampleTime;
+    int sampleIntervalSeconds;
+    String calculateRunFlatTimeFormatted(float currentA, float warningThresholdHours, bool &warningTriggered);
 };
-
-#endif // INA226_ADC_H
+#endif

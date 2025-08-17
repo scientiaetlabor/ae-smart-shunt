@@ -1,9 +1,11 @@
 #include "ina226_adc.h"
 #include <cfloat>
+#include <algorithm>
 
 INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCapacityAh)
     : ina226(address),
-      ohms(shuntResistorOhms),
+      defaultOhms(shuntResistorOhms), // Store the default value
+      calibratedOhms(shuntResistorOhms), // Initialize with default
       batteryCapacity(batteryCapacityAh),
       maxBatteryCapacity(batteryCapacityAh),
       lastUpdateTime(0),
@@ -29,7 +31,15 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
 
     ina226.setAverage(AVERAGE_16);
     ina226.setConversionTime(CONV_TIME_8244);
-    ina226.setResistorRange(ohms, 100.0);
+    
+    // Load the calibrated shunt resistance from NVS, if it exists
+    if (!loadShuntResistance()) {
+        calibratedOhms = defaultOhms; // Use the default if not found
+        Serial.printf("No calibrated shunt resistance found. Using default: %.9f Ohms.\n", calibratedOhms);
+    }
+    
+    // Set the resistor range with the calibrated or default value
+    ina226.setResistorRange(calibratedOhms, 100.0);
 }
 
 void INA226_ADC::readSensors() {
@@ -41,38 +51,43 @@ void INA226_ADC::readSensors() {
     loadVoltage_V = busVoltage_V + (shuntVoltage_mV / 1000.0f);
 }
 
-float INA226_ADC::getShuntVoltage_mV() const {
-    return shuntVoltage_mV;
-}
-
-float INA226_ADC::getBusVoltage_V() const {
-    return busVoltage_V;
-}
-
-float INA226_ADC::getRawCurrent_mA() const {
-    return current_mA;
-}
+float INA226_ADC::getShuntVoltage_mV() const { return shuntVoltage_mV; }
+float INA226_ADC::getBusVoltage_V() const { return busVoltage_V; }
+float INA226_ADC::getRawCurrent_mA() const { return current_mA; }
 
 float INA226_ADC::getCurrent_mA() const {
-    // Apply linear calibration to raw reading
+    if (!calibrationTable.empty()) {
+        return getCalibratedCurrent_mA(current_mA);
+    }
+    // fallback: linear
     return (current_mA * calibrationGain) + calibrationOffset_mA;
 }
 
-float INA226_ADC::getPower_mW() const {
-    return power_mW;
+float INA226_ADC::getCalibratedCurrent_mA(float raw_mA) const {
+    if (calibrationTable.empty()) return raw_mA;
+
+    // Below/above range -> clamp to edge true values
+    if (raw_mA <= calibrationTable.front().raw_mA) return calibrationTable.front().true_mA;
+    if (raw_mA >= calibrationTable.back().raw_mA)  return calibrationTable.back().true_mA;
+
+    // Find interval [i-1, i] such that raw_mA < points[i].raw_mA
+    for (size_t i = 1; i < calibrationTable.size(); ++i) {
+        if (raw_mA < calibrationTable[i].raw_mA) {
+            const float x0 = calibrationTable[i-1].raw_mA;
+            const float y0 = calibrationTable[i-1].true_mA;
+            const float x1 = calibrationTable[i].raw_mA;
+            const float y1 = calibrationTable[i].true_mA;
+            if (fabsf(x1 - x0) < 1e-9f) return y0; // degenerate
+            return y0 + (raw_mA - x0) * (y1 - y0) / (x1 - x0);
+        }
+    }
+    return raw_mA; // should not hit
 }
 
-float INA226_ADC::getLoadVoltage_V() const {
-    return loadVoltage_V;
-}
-
-float INA226_ADC::getBatteryCapacity() const {
-    return batteryCapacity;
-}
-
-void INA226_ADC::setBatteryCapacity(float capacity) {
-    batteryCapacity = capacity;
-}
+float INA226_ADC::getPower_mW() const { return power_mW; }
+float INA226_ADC::getLoadVoltage_V() const { return loadVoltage_V; }
+float INA226_ADC::getBatteryCapacity() const { return batteryCapacity; }
+void INA226_ADC::setBatteryCapacity(float capacity) { batteryCapacity = capacity; }
 
 void INA226_ADC::setCalibration(float gain, float offset_mA) {
     calibrationGain = gain;
@@ -157,6 +172,154 @@ bool INA226_ADC::saveCalibration(uint16_t shuntRatedA, float gain, float offset_
     return true;
 }
 
+// New method to save calibrated shunt resistance to NVS
+bool INA226_ADC::saveShuntResistance(float resistance) {
+    Preferences prefs;
+    prefs.begin("ina_cal", false);
+    prefs.putFloat("cal_ohms", resistance);
+    prefs.end();
+    calibratedOhms = resistance;
+    return true;
+}
+
+// New method to load calibrated shunt resistance from NVS
+bool INA226_ADC::loadShuntResistance() {
+    Preferences prefs;
+    prefs.begin("ina_cal", true);
+    float resistance = prefs.getFloat("cal_ohms", -1.0f);
+    prefs.end();
+    if (resistance > 0.0f) {
+        calibratedOhms = resistance;
+        Serial.printf("Loaded calibrated shunt resistance: %.9f Ohms.\n", calibratedOhms);
+        return true;
+    }
+    return false;
+}
+
+// ---------------- Table-based calibration ----------------
+
+static void sortAndDedup(std::vector<CalPoint> &pts) {
+    std::sort(pts.begin(), pts.end(), [](const CalPoint &a, const CalPoint &b){
+        return a.raw_mA < b.raw_mA;
+    });
+    // Collapse any duplicate raw_mA by averaging their true_mA
+    std::vector<CalPoint> out;
+    for (const auto &p : pts) {
+        if (out.empty() || fabsf(p.raw_mA - out.back().raw_mA) > 1e-6f) {
+            out.push_back(p);
+        } else {
+            // average
+            out.back().true_mA = 0.5f * (out.back().true_mA + p.true_mA);
+        }
+    }
+    pts.swap(out);
+}
+
+bool INA226_ADC::saveCalibrationTable(uint16_t shuntRatedA, const std::vector<CalPoint> &points) {
+    std::vector<CalPoint> pts = points;
+    if (pts.empty()) return false;
+    sortAndDedup(pts);
+
+    Preferences prefs;
+    prefs.begin("ina_cal", false);
+
+    // Store number of points
+    char keyCount[16];
+    snprintf(keyCount, sizeof(keyCount), "n_%u", (unsigned)shuntRatedA);
+    prefs.putUInt(keyCount, (uint32_t)pts.size());
+
+    // Store each point
+    for (size_t i = 0; i < pts.size(); i++) {
+        char keyRaw[20], keyTrue[20];
+        snprintf(keyRaw,  sizeof(keyRaw),  "r_%u_%u", (unsigned)shuntRatedA, (unsigned)i);
+        snprintf(keyTrue, sizeof(keyTrue), "t_%u_%u", (unsigned)shuntRatedA, (unsigned)i);
+        prefs.putFloat(keyRaw,  pts[i].raw_mA);
+        prefs.putFloat(keyTrue, pts[i].true_mA);
+    }
+
+    prefs.end();
+    calibrationTable = std::move(pts);
+    return true;
+}
+
+bool INA226_ADC::loadCalibrationTable(uint16_t shuntRatedA) {
+    Preferences prefs;
+    prefs.begin("ina_cal", true);
+
+    char keyCount[16];
+    snprintf(keyCount, sizeof(keyCount), "n_%u", (unsigned)shuntRatedA);
+    uint32_t N = prefs.getUInt(keyCount, 0);
+
+    if (N == 0) {
+        prefs.end();
+        calibrationTable.clear();
+        return false;
+    }
+
+    std::vector<CalPoint> pts;
+    pts.reserve(N);
+    for (uint32_t i = 0; i < N; i++) {
+        char keyRaw[20], keyTrue[20];
+        snprintf(keyRaw,  sizeof(keyRaw),  "r_%u_%u", (unsigned)shuntRatedA, (unsigned)i);
+        snprintf(keyTrue, sizeof(keyTrue), "t_%u_%u", (unsigned)shuntRatedA, (unsigned)i);
+        float raw = prefs.getFloat(keyRaw,  NAN);
+        float tru = prefs.getFloat(keyTrue, NAN);
+        if (isnan(raw) || isnan(tru)) continue;
+        pts.push_back({raw, tru});
+    }
+    prefs.end();
+
+    if (pts.empty()) {
+        calibrationTable.clear();
+        return false;
+    }
+    sortAndDedup(pts);
+    calibrationTable = std::move(pts);
+    return true;
+}
+
+bool INA226_ADC::hasCalibrationTable() const {
+    return !calibrationTable.empty();
+}
+
+bool INA226_ADC::hasStoredCalibrationTable(uint16_t shuntRatedA, size_t &countOut) const {
+    Preferences prefs;
+    prefs.begin("ina_cal", true);
+    char keyCount[16];
+    snprintf(keyCount, sizeof(keyCount), "n_%u", (unsigned)shuntRatedA);
+    uint32_t N = prefs.getUInt(keyCount, 0);
+    prefs.end();
+    countOut = (size_t)N;
+    return (N > 0);
+}
+
+bool INA226_ADC::clearCalibrationTable(uint16_t shuntRatedA) {
+    Preferences prefs;
+    prefs.begin("ina_cal", false);
+
+    char keyCount[16];
+    snprintf(keyCount, sizeof(keyCount), "n_%u", (unsigned)shuntRatedA);
+    uint32_t N = prefs.getUInt(keyCount, 0);
+
+    // Remove count first
+    prefs.remove(keyCount);
+
+    // Remove individual points if they existed
+    for (uint32_t i = 0; i < N; i++) {
+        char keyRaw[20], keyTrue[20];
+        snprintf(keyRaw,  sizeof(keyRaw),  "r_%u_%u", (unsigned)shuntRatedA, (unsigned)i);
+        snprintf(keyTrue, sizeof(keyTrue), "t_%u_%u", (unsigned)shuntRatedA, (unsigned)i);
+        prefs.remove(keyRaw);
+        prefs.remove(keyTrue);
+    }
+
+    prefs.end();
+    calibrationTable.clear();
+    return true;
+}
+
+// ---------------- Battery/run-flat logic (unchanged) ----------------
+
 void INA226_ADC::updateBatteryCapacity(float currentA) {
     unsigned long currentTime = millis();
 
@@ -173,9 +336,7 @@ void INA226_ADC::updateBatteryCapacity(float currentA) {
     lastUpdateTime = currentTime;
 }
 
-bool INA226_ADC::isOverflow() const {
-    return ina226.overflow;
-}
+bool INA226_ADC::isOverflow() const { return ina226.overflow; }
 
 String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningThresholdHours, bool &warningTriggered) {
     warningTriggered = false;
@@ -183,7 +344,7 @@ String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningTh
     const float maxRunFlatHours = 24.0f * 7.0f;
     float runHours = -1.0f;
     bool charging = false;
-    
+
     // Define a small tolerance for "fully charged" state, e.g., 99.5%
     const float fullyChargedThreshold = maxBatteryCapacity * 0.995f;
 
@@ -224,7 +385,7 @@ String INA226_ADC::calculateRunFlatTimeFormatted(float currentA, float warningTh
     if (hours > 0) {
         result += String(hours) + (hours == 1 ? " hour " : " hours ");
     }
-    
+
     // Add "until flat" or "until full" based on charging state
     if (!charging) {
         result += "until flat";
