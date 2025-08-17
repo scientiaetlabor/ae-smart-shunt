@@ -17,7 +17,8 @@
 #define OTAGH_REPO_NAME "smart-shunt"
 #include <OTA-Hub.hpp>
 
-#define USE_ADC // if not defined, use victron BLE
+#define USE_ADC // if defined, use ADC, else, victron BLE
+//#define USE_WIFI // if defined, conect to WIFI, else, don't
 
 float batteryCapacity = 100.0f; // Default rated battery capacity in Ah (used for SOC calc)
 
@@ -268,6 +269,7 @@ void setup()
   Serial.begin(115200);
   delay(100); // let Serial start
 
+#ifdef USE_WIFI
   // WiFi connection
   WiFi.begin(WIFI_SSID, WIFI_PASS);
   Serial.print("Connecting to WiFi");
@@ -280,6 +282,7 @@ void setup()
   // Initialise OTA
   wifi_client.setCACert(OTAGH_CA_CERT); // Set the api.github.com SSL cert on the WiFi Client
   OTA::init(wifi_client);
+#endif
 
   ina226_adc.begin(6, 10);
 
