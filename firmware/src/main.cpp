@@ -307,6 +307,33 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   Serial.println("These values are persisted and will be applied to subsequent current readings.");
 }
 
+void printShunt(const struct_message_ae_smart_shunt_1 *p) {
+  if (!p) return;
+
+  Serial.printf(
+    "=== Local Shunt ===\n"
+    "Message ID     : %d\n"
+    "Data Changed   : %s\n"
+    "Voltage        : %.2f V\n"
+    "Current        : %.2f A\n"
+    "Power          : %.2f W\n"
+    "SOC            : %.1f %%\n"
+    "Capacity       : %.2f Ah\n"
+    "State          : %d\n"
+    "Run Flat Time  : %s\n"
+    "===================\n",
+    p->messageID,
+    p->dataChanged ? "true" : "false",
+    p->batteryVoltage,
+    p->batteryCurrent,
+    p->batteryPower,
+    p->batterySOC * 100.0f,
+    p->batteryCapacity,
+    p->batteryState,
+    p->runFlatTime
+  );
+}
+
 // New function to handle shunt resistance calibration
 void runShuntResistanceCalibration(INA226_ADC &ina)
 {
@@ -592,8 +619,7 @@ void loop()
     espNowHandler.sendMessageAeSmartShunt();
 
 #ifdef USE_ADC
-    Serial.print("Average estimated run-flat time: ");
-    Serial.println(String(ae_smart_shunt_struct.runFlatTime));
+    printShunt(&ae_smart_shunt_struct);
     if (ina226_adc.isOverflow())
     {
       Serial.println("Warning: Overflow condition!");
