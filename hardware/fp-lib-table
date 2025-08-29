@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "CMSL008N06")(type "KiCad")(uri "${KIPRJMOD}/parts/CMSL008N06")(options "")(descr ""))
+  (lib (name "ShuntToPCB")(type "KiCad")(uri "${KIPRJMOD}/parts/ShuntToPCB/ShuntToPCB.pretty")(options "")(descr ""))
+)
