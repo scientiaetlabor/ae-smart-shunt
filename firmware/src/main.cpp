@@ -171,7 +171,7 @@ static String waitForEnterOrXWithDebug(INA226_ADC &ina, bool debugMode)
       ina.readSensors();
       float raw = ina.getRawCurrent_mA();
       float cal = ina.getCurrent_mA();
-      Serial.printf("RAW: %.3f mA\tCAL: %.3f mA\n", raw, cal);
+      Serial.printf("RAW: %8.3f mA\tCAL: %8.3f mA   \r", raw, cal);
       lastPrint = now;
     }
     delay(20);
