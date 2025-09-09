@@ -230,6 +230,7 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
 
   // build measurement percentages
   std::vector<float> perc;
+  perc.push_back(0.0f);    // 0%
   perc.push_back(0.005f);  // 0.5%
   perc.push_back(0.01f);   // 1%
   perc.push_back(0.025f);  // 2.5%
@@ -243,30 +244,18 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   std::vector<float> measured_mA;
   std::vector<float> true_mA;
 
-  // --- Measure self-consumption ---
-  Serial.println(F("\n--- Step 0: Measure Self-Consumption ---"));
-  Serial.println(F("Disconnect all loads from the shunt, then press Enter."));
-  Serial.print(F("> "));
-  waitForEnterOrXWithDebug(ina, false);
-
-  float self_consumption_offset_mA = 0.0f;
-  const int self_consumption_samples = 16;
-  for (int s = 0; s < self_consumption_samples; ++s) {
-      ina.readSensors();
-      self_consumption_offset_mA += ina.getRawCurrent_mA();
-      delay(120);
-  }
-  self_consumption_offset_mA /= (float)self_consumption_samples;
-  Serial.printf("Measured self-consumption offset: %.3f mA\n", self_consumption_offset_mA);
-  // ---
-
   for (size_t i = 0; i < perc.size(); ++i)
   {
     float p = perc[i];
     float trueA = shuntA * p;
     float true_milli = trueA * 1000.0f;
-    Serial.printf("\nStep %u of %u: Target = %.3f A (%.2f%% of %dA).\nSet test jig to the target current, then press Enter to record. Enter 'x' to cancel and accept measured so far.\n",
-                  (unsigned)(i + 1), (unsigned)perc.size(), trueA, p * 100.0f, shuntA);
+    if (p == 0.0f) {
+      Serial.printf("\nStep %u of %u: Target = %.3f A (Zero Load).\nDisconnect all loads from the shunt, then press Enter to record. Enter 'x' to cancel.\n",
+                    (unsigned)(i + 1), (unsigned)perc.size(), trueA);
+    } else {
+      Serial.printf("\nStep %u of %u: Target = %.3f A (%.2f%% of %dA).\nSet test jig to the target current, then press Enter to record. Enter 'x' to cancel and accept measured so far.\n",
+                    (unsigned)(i + 1), (unsigned)perc.size(), trueA, p * 100.0f, shuntA);
+    }
 
     Serial.print("> ");
 
@@ -289,11 +278,10 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
       delay(120);
     }
     float avgRaw = sumRaw / (float)samples;
-    float corrected_avgRaw = avgRaw - self_consumption_offset_mA;
 
-    Serial.printf("Recorded avg raw reading: %.3f mA (Corrected: %.3f mA, expected true: %.3f mA)\n", avgRaw, corrected_avgRaw, true_milli);
+    Serial.printf("Recorded avg raw reading: %.3f mA  (expected true: %.3f mA)\n", avgRaw, true_milli);
 
-    measured_mA.push_back(corrected_avgRaw);
+    measured_mA.push_back(avgRaw);
     true_mA.push_back(true_milli);
   }
 
