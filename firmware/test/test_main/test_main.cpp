@@ -367,6 +367,7 @@ int main(int argc, char **argv) {
     RUN_TEST(test_voltage_reconnect);
     RUN_TEST(test_alert_disconnect);
     RUN_TEST(test_usb_power_no_disconnect);
+    RUN_TEST(test_alert_ignored_when_disconnected);
     UNITY_END();
     return 0;
 }
@@ -383,4 +384,20 @@ void test_usb_power_no_disconnect(void) {
     TEST_ASSERT_TRUE(adc.isLoadConnected());
     TEST_ASSERT_EQUAL(HIGH, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
     TEST_ASSERT_FALSE(mock_esp_deep_sleep_called());
+}
+
+void test_alert_ignored_when_disconnected(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setLoadConnected(false);
+
+    // Simulate ISR
+    adc.handleAlert();
+    TEST_ASSERT_TRUE(adc.isAlertTriggered());
+
+    // Simulate main loop processing
+    adc.processAlert();
+
+    // Assert that the load is still disconnected and the flag is cleared
+    TEST_ASSERT_FALSE(adc.isLoadConnected());
+    TEST_ASSERT_FALSE(adc.isAlertTriggered());
 }

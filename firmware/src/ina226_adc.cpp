@@ -564,10 +564,12 @@ void INA226_ADC::handleAlert() {
 
 void INA226_ADC::processAlert() {
     if (alertTriggered) {
-        Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
-        setLoadConnected(false);
-        ina226.readAndClearFlags(); // Clear the alert latch
-        alertTriggered = false; // Reset the flag
+        if (isLoadConnected()) { // Only process if the load is currently connected
+            Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
+            setLoadConnected(false);
+        }
+        ina226.readAndClearFlags(); // Always clear the alert on the chip
+        alertTriggered = false; // Reset the software flag
     }
 }
 
