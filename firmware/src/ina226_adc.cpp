@@ -16,6 +16,10 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       power_mW(-1),
       calibrationGain(1.0f),
       calibrationOffset_mA(0.0f),
+      lowVoltageCutoff(9.0f), // Default for 3S LiFePO4
+      hysteresis(0.6f),       // Default hysteresis
+      overcurrentThreshold(50.0f), // Default 50A
+      loadConnected(true),
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -26,6 +30,12 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
 
 void INA226_ADC::begin(int sdaPin, int sclPin) {
     Wire.begin(sdaPin, sclPin);
+
+    pinMode(LOAD_SWITCH_PIN, OUTPUT);
+    setLoadConnected(true);
+
+    pinMode(INA_ALERT_PIN, INPUT_PULLUP);
+
     ina226.init();
     ina226.waitUntilConversionCompleted();
 
@@ -40,6 +50,9 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
     
     // Set the resistor range with the calibrated or default value
     ina226.setResistorRange(calibratedOhms, 100.0);
+
+    loadProtectionSettings();
+    configureAlert();
 }
 
 void INA226_ADC::readSensors() {
@@ -449,4 +462,102 @@ String INA226_ADC::getAveragedRunFlatTime(float currentA, float warningThreshold
     warningTriggered = (avgRunFlatHours >= 0.0f) && (avgRunFlatHours <= warningThresholdHours);
     float approxCurrentA = (avgRunFlatHours > 0.0f) ? (batteryCapacity / avgRunFlatHours) : 0.0f;
     return calculateRunFlatTimeFormatted(approxCurrentA, warningThresholdHours, warningTriggered);
+}
+
+// ---------------- Protection Features ----------------
+
+void INA226_ADC::loadProtectionSettings() {
+    Preferences prefs;
+    prefs.begin(NVS_PROTECTION_NAMESPACE, true); // read-only
+    lowVoltageCutoff = prefs.getFloat(NVS_KEY_LOW_VOLTAGE_CUTOFF, 9.0f);
+    hysteresis = prefs.getFloat(NVS_KEY_HYSTERESIS, 0.6f);
+    overcurrentThreshold = prefs.getFloat(NVS_KEY_OVERCURRENT, 50.0f);
+    prefs.end();
+    Serial.println("Loaded protection settings:");
+    Serial.printf("  LV Cutoff: %.2fV\n", lowVoltageCutoff);
+    Serial.printf("  Hysteresis: %.2fV\n", hysteresis);
+    Serial.printf("  OC Threshold: %.2fA\n", overcurrentThreshold);
+}
+
+void INA226_ADC::saveProtectionSettings() {
+    Preferences prefs;
+    prefs.begin(NVS_PROTECTION_NAMESPACE, false); // read-write
+    prefs.putFloat(NVS_KEY_LOW_VOLTAGE_CUTOFF, lowVoltageCutoff);
+    prefs.putFloat(NVS_KEY_HYSTERESIS, hysteresis);
+    prefs.putFloat(NVS_KEY_OVERCURRENT, overcurrentThreshold);
+    prefs.end();
+    Serial.println("Saved protection settings.");
+}
+
+void INA226_ADC::setProtectionSettings(float lv_cutoff, float hyst, float oc_thresh) {
+    lowVoltageCutoff = lv_cutoff;
+    hysteresis = hyst;
+    overcurrentThreshold = oc_thresh;
+    saveProtectionSettings();
+    configureAlert(); // Re-configure alert with new threshold
+}
+
+float INA226_ADC::getLowVoltageCutoff() const {
+    return lowVoltageCutoff;
+}
+
+float INA226_ADC::getHysteresis() const {
+    return hysteresis;
+}
+
+float INA226_ADC::getOvercurrentThreshold() const {
+    return overcurrentThreshold;
+}
+
+void INA226_ADC::checkAndHandleProtection() {
+    float voltage = getBusVoltage_V();
+    float current = getCurrent_mA() / 1000.0f;
+
+    if (isLoadConnected()) {
+        if (voltage < lowVoltageCutoff) {
+            Serial.printf("Low voltage detected (%.2fV < %.2fV). Disconnecting load.\n", voltage, lowVoltageCutoff);
+            setLoadConnected(false);
+            enterSleepMode();
+        } else if (current > overcurrentThreshold) {
+            Serial.printf("Overcurrent detected (%.2fA > %.2fA). Disconnecting load.\n", current, overcurrentThreshold);
+            setLoadConnected(false);
+        }
+    } else {
+        // If load is disconnected, check if it should be reconnected
+        if (voltage > (lowVoltageCutoff + hysteresis)) {
+            Serial.printf("Voltage recovered (%.2fV > %.2fV). Reconnecting load.\n", voltage, lowVoltageCutoff + hysteresis);
+            setLoadConnected(true);
+        }
+    }
+}
+
+void INA226_ADC::setLoadConnected(bool connected) {
+    digitalWrite(LOAD_SWITCH_PIN, connected ? HIGH : LOW);
+    loadConnected = connected;
+}
+
+bool INA226_ADC::isLoadConnected() const {
+    return loadConnected;
+}
+
+void INA226_ADC::configureAlert() {
+    // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)
+    float shuntVoltageLimit_V = overcurrentThreshold * calibratedOhms;
+
+    ina226.setAlertType(SHUNT_OVER, shuntVoltageLimit_V);
+    ina226.enableAlertLatch();
+    Serial.printf("Configured INA226 alert for overcurrent threshold of %.2fA (Shunt Voltage > %.4fV)\n",
+                  overcurrentThreshold, shuntVoltageLimit_V);
+}
+
+void INA226_ADC::handleAlert() {
+    Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
+    setLoadConnected(false);
+    ina226.readAndClearFlags(); // Clear the alert latch
+}
+
+void INA226_ADC::enterSleepMode() {
+    Serial.println("Entering deep sleep to conserve power.");
+    esp_sleep_enable_timer_wakeup(10 * 1000000); // Wake up every 10 seconds
+    esp_deep_sleep_start();
 }

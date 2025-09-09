@@ -7,6 +7,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include <vector>
+#include "shared_defs.h"
 
 struct CalPoint {
     float raw_mA;   // raw measured current from INA226 (mA)
@@ -35,6 +36,20 @@ public:
     bool saveShuntResistance(float resistance);
     bool loadShuntResistance();
 
+    // Protection features
+    void loadProtectionSettings();
+    void saveProtectionSettings();
+    void setProtectionSettings(float lv_cutoff, float hyst, float oc_thresh);
+    float getLowVoltageCutoff() const;
+    float getHysteresis() const;
+    float getOvercurrentThreshold() const;
+    void checkAndHandleProtection();
+    void setLoadConnected(bool connected);
+    bool isLoadConnected() const;
+    void configureAlert();
+    void handleAlert();
+    void enterSleepMode();
+
     // ---------- Linear calibration (legacy / fallback) ----------
     bool loadCalibration(uint16_t shuntRatedA);                          // apply stored linear (gain/offset)
     bool saveCalibration(uint16_t shuntRatedA, float gain, float offset_mA);
@@ -58,6 +73,12 @@ private:
     unsigned long lastUpdateTime;
     float shuntVoltage_mV, loadVoltage_V, busVoltage_V, current_mA, power_mW;
     float calibrationGain, calibrationOffset_mA;
+
+    // Protection settings
+    float lowVoltageCutoff;
+    float hysteresis;
+    float overcurrentThreshold;
+    bool loadConnected;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;

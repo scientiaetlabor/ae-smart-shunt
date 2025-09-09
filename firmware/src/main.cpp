@@ -40,6 +40,10 @@ INA226_ADC ina226_adc(I2C_ADDRESS, 0.000944464f, 100.00f);
 ESPNowHandler espNowHandler(broadcastAddress); // ESP-NOW handler for sending data
 WiFiClientSecure wifi_client;
 
+void IRAM_ATTR alertISR() {
+  ina226_adc.handleAlert();
+}
+
 bool handleOTA()
 {
   // 1. Check for updates, by checking the latest release on GitHub
@@ -420,6 +424,69 @@ void runShuntResistanceCalibration(INA226_ADC &ina)
   }
 }
 
+void runProtectionConfigMenu(INA226_ADC &ina)
+{
+  Serial.println(F("\n--- Protection Settings ---"));
+
+  // Temporary variables to hold the new settings
+  float new_lv_cutoff, new_hysteresis, new_oc_thresh;
+
+  // Get current settings to use as defaults
+  float current_lv_cutoff = ina.getLowVoltageCutoff();
+  float current_hysteresis = ina.getHysteresis();
+  float current_oc_thresh = ina.getOvercurrentThreshold();
+
+  // --- Low Voltage Cutoff ---
+  Serial.print(F("Enter Low Voltage Cutoff (Volts) [default: "));
+  Serial.print(current_lv_cutoff);
+  Serial.print(F("]: "));
+  String input = SerialReadLineBlocking();
+  if (input.length() > 0) {
+    new_lv_cutoff = input.toFloat();
+    if (new_lv_cutoff < 7.0 || new_lv_cutoff > 12.0) {
+      Serial.println(F("Invalid value. Please enter a value between 7.0 and 12.0."));
+      return;
+    }
+  } else {
+    new_lv_cutoff = current_lv_cutoff;
+  }
+
+  // --- Hysteresis ---
+  Serial.print(F("Enter Hysteresis (Volts) [default: "));
+  Serial.print(current_hysteresis);
+  Serial.print(F("]: "));
+  input = SerialReadLineBlocking();
+  if (input.length() > 0) {
+    new_hysteresis = input.toFloat();
+    if (new_hysteresis < 0.1 || new_hysteresis > 2.0) {
+      Serial.println(F("Invalid value. Please enter a value between 0.1 and 2.0."));
+      return;
+    }
+  } else {
+    new_hysteresis = current_hysteresis;
+  }
+
+  // --- Overcurrent Threshold ---
+  Serial.print(F("Enter Overcurrent Threshold (Amps) [default: "));
+  Serial.print(current_oc_thresh);
+  Serial.print(F("]: "));
+  input = SerialReadLineBlocking();
+  if (input.length() > 0) {
+    new_oc_thresh = input.toFloat();
+    if (new_oc_thresh < 1.0 || new_oc_thresh > 200.0) {
+      Serial.println(F("Invalid value. Please enter a value between 1.0 and 200.0."));
+      return;
+    }
+  } else {
+    new_oc_thresh = current_oc_thresh;
+  }
+
+  // --- Save Settings ---
+  ina.setProtectionSettings(new_lv_cutoff, new_hysteresis, new_oc_thresh);
+  Serial.println(F("Protection settings updated."));
+}
+
+
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
   Serial.print("Last Packet Send Status: ");
@@ -450,6 +517,9 @@ void setup()
 
   // The begin method now handles loading the calibrated resistance
   ina226_adc.begin(6, 10);
+
+  // Attach interrupt for INA226 alert pin
+  attachInterrupt(digitalPinToInterrupt(INA_ALERT_PIN), alertISR, FALLING);
 
   // Check for and restore battery capacity from NVS
   Preferences preferences;
@@ -548,12 +618,19 @@ void loop()
       // run the new shunt resistance calibration
       runShuntResistanceCalibration(ina226_adc);
     }
+    else if (s.equalsIgnoreCase("p"))
+    {
+      // run the protection configuration menu
+      runProtectionConfigMenu(ina226_adc);
+    }
     // else ignore — keep running
   }
 
   if (millis() - last_loop_millis > loop_interval)
   {
 #ifdef USE_ADC
+    ina226_adc.checkAndHandleProtection();
+
     ina226_adc.readSensors();
 
     // Populate struct fields
