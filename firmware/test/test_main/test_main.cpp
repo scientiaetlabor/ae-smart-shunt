@@ -360,6 +360,21 @@ int main(int argc, char **argv) {
     RUN_TEST(test_overcurrent_disconnect);
     RUN_TEST(test_voltage_reconnect);
     RUN_TEST(test_alert_disconnect);
+    RUN_TEST(test_usb_power_no_disconnect);
     UNITY_END();
     return 0;
+}
+
+void test_usb_power_no_disconnect(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setProtectionSettings(9.0f, 0.5f, 50.0f);
+    adc.setLoadConnected(true);
+
+    INA226_WE::mockBusVoltage_V = 5.0f; // USB power
+    adc.readSensors();
+    adc.checkAndHandleProtection();
+
+    TEST_ASSERT_TRUE(adc.isLoadConnected());
+    TEST_ASSERT_EQUAL(HIGH, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+    TEST_ASSERT_FALSE(mock_esp_deep_sleep_called());
 }

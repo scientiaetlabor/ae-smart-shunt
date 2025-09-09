@@ -513,6 +513,13 @@ void INA226_ADC::checkAndHandleProtection() {
     float voltage = getBusVoltage_V();
     float current = getCurrent_mA() / 1000.0f;
 
+    // If the voltage is very low, it's likely that we are powered via USB
+    // for configuration and don't have a battery connected. In this case,
+    // we should not trigger low-voltage protection.
+    if (voltage < 5.25f) {
+        return;
+    }
+
     if (isLoadConnected()) {
         if (voltage < lowVoltageCutoff) {
             Serial.printf("Low voltage detected (%.2fV < %.2fV). Disconnecting load.\n", voltage, lowVoltageCutoff);
