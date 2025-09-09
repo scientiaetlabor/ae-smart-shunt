@@ -84,7 +84,7 @@ private:
     float overcurrentThreshold;
     bool loadConnected;
     volatile bool alertTriggered;
-    bool isConfigured;
+    bool m_isConfigured;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;

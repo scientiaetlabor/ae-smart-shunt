@@ -21,7 +21,7 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       overcurrentThreshold(50.0f), // Default 50A
       loadConnected(true),
       alertTriggered(false),
-      isConfigured(false),
+      m_isConfigured(false),
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -45,8 +45,8 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
     ina226.setConversionTime(CONV_TIME_8244);
     
     // Load the calibrated shunt resistance from NVS, if it exists
-    this->isConfigured = loadShuntResistance();
-    if (!this->isConfigured) {
+    this->m_isConfigured = loadShuntResistance();
+    if (!this->m_isConfigured) {
         calibratedOhms = defaultOhms; // Use the default if not found
         Serial.printf("No calibrated shunt resistance found. Using default: %.9f Ohms.\n", calibratedOhms);
     }
@@ -590,5 +590,5 @@ void INA226_ADC::enterSleepMode() {
 }
 
 bool INA226_ADC::isConfigured() const {
-    return isConfigured;
+    return m_isConfigured;
 }
