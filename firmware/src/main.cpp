@@ -523,6 +523,13 @@ void setup()
   // Attach interrupt for INA226 alert pin
   attachInterrupt(digitalPinToInterrupt(INA_ALERT_PIN), alertISR, FALLING);
 
+  if (!ina226_adc.isConfigured()) {
+    Serial.println("\n!!! DEVICE NOT CONFIGURED !!!");
+    Serial.println("Load output has been disabled.");
+    Serial.println("Please run Shunt Resistance Calibration ('r') and restart.");
+    ina226_adc.setLoadConnected(false);
+  }
+
   // Check for and restore battery capacity from NVS
   Preferences preferences;
   preferences.begin("storage", true); // read-only
@@ -635,7 +642,9 @@ void loop()
   if (millis() - last_loop_millis > loop_interval)
   {
 #ifdef USE_ADC
-    ina226_adc.checkAndHandleProtection();
+    if (ina226_adc.isConfigured()) {
+      ina226_adc.checkAndHandleProtection();
+    }
 
     ina226_adc.readSensors();
 
@@ -697,9 +706,11 @@ void loop()
     strncpy(ae_smart_shunt_struct.runFlatTime, "N/A", sizeof(ae_smart_shunt_struct.runFlatTime));
 #endif
 
-    // Send the data via ESP-NOW
-    espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
-    espNowHandler.sendMessageAeSmartShunt();
+    // Send the data via ESP-NOW if configured
+    if (ina226_adc.isConfigured()) {
+      espNowHandler.setAeSmartShuntStruct(ae_smart_shunt_struct);
+      espNowHandler.sendMessageAeSmartShunt();
+    }
 
 #ifdef USE_ADC
     printShunt(&ae_smart_shunt_struct);

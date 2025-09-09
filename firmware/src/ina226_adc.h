@@ -52,6 +52,7 @@ public:
     bool isAlertTriggered() const;
     void clearAlerts();
     void enterSleepMode();
+    bool isConfigured() const;
 
     // ---------- Linear calibration (legacy / fallback) ----------
     bool loadCalibration(uint16_t shuntRatedA);                          // apply stored linear (gain/offset)
@@ -83,6 +84,7 @@ private:
     float overcurrentThreshold;
     bool loadConnected;
     volatile bool alertTriggered;
+    bool isConfigured;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;
