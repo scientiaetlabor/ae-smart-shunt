@@ -254,45 +254,71 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   std::vector<float> measured_mA;
   std::vector<float> true_mA;
 
+  size_t last_measured_idx = 0;
+
   for (size_t i = 0; i < perc.size(); ++i)
   {
     float p = perc[i];
     float trueA = shuntA * p;
     float true_milli = trueA * 1000.0f;
-    if (p == 0.0f) {
-      Serial.printf("\nStep %u of %u: Target = %.3f A (Zero Load).\nDisconnect all loads from the shunt, then press Enter to record. Enter 'x' to cancel.\n",
-                    (unsigned)(i + 1), (unsigned)perc.size(), trueA);
-    } else {
-      Serial.printf("\nStep %u of %u: Target = %.3f A (%.2f%% of %dA).\nSet test jig to the target current, then press Enter to record. Enter 'x' to cancel and accept measured so far.\n",
-                    (unsigned)(i + 1), (unsigned)perc.size(), trueA, p * 100.0f, shuntA);
+
+    // --- Measure points up to and including 50% ---
+    if (p <= 0.5f) {
+        if (p == 0.0f) {
+        Serial.printf("\nStep %u of %u: Target = %.3f A (Zero Load).\nDisconnect all loads from the shunt, then press Enter to record. Enter 'x' to cancel.\n",
+                        (unsigned)(i + 1), (unsigned)perc.size(), trueA);
+        } else {
+        Serial.printf("\nStep %u of %u: Target = %.3f A (%.2f%% of %dA).\nSet test jig to the target current, then press Enter to record. Enter 'x' to cancel and accept measured so far.\n",
+                        (unsigned)(i + 1), (unsigned)perc.size(), trueA, p * 100.0f, shuntA);
+        }
+
+        Serial.print("> ");
+        String line = waitForEnterOrXWithDebug(ina, debugMode);
+        if (line.equalsIgnoreCase("x")) {
+            Serial.println("User canceled early; accepting tests recorded so far.");
+            break;
+        }
+
+        const int samples = 8;
+        float sumRaw = 0.0f;
+        for (int s = 0; s < samples; ++s) {
+            ina.readSensors();
+            sumRaw += ina.getRawCurrent_mA();
+            delay(120);
+        }
+        float avgRaw = sumRaw / (float)samples;
+        Serial.printf("Recorded avg raw reading: %.3f mA  (expected true: %.3f mA)\n", avgRaw, true_milli);
+        measured_mA.push_back(avgRaw);
+        true_mA.push_back(true_milli);
+        last_measured_idx = i;
     }
+  }
 
-    Serial.print("> ");
+  // --- Extrapolate for points > 50% ---
+  if (last_measured_idx > 0 && last_measured_idx < perc.size() - 1) {
+    Serial.println("\nExtrapolating remaining points > 50%...");
 
-    // Wait for Enter or 'x', printing debug stream if enabled.
-    String line = waitForEnterOrXWithDebug(ina, debugMode);
-    if (line.equalsIgnoreCase("x"))
-    {
-      Serial.println("User canceled early; accepting tests recorded so far.");
-      break;
+    // Get the last two measured points to establish a linear trend
+    float raw1 = measured_mA[last_measured_idx - 1];
+    float true1 = true_mA[last_measured_idx - 1];
+    float raw2 = measured_mA[last_measured_idx];
+    float true2 = true_mA[last_measured_idx];
+
+    // Calculate the slope (gain) of the last segment
+    float slope = (raw2 - raw1) / (true2 - true1);
+
+    for (size_t i = last_measured_idx + 1; i < perc.size(); ++i) {
+        float p = perc[i];
+        float trueA = shuntA * p;
+        float true_milli = trueA * 1000.0f;
+
+        // Extrapolate the raw value
+        float extrapolated_raw = raw2 + slope * (true_milli - true2);
+
+        Serial.printf("Extrapolated Point: raw=%.3f mA -> true=%.3f mA (%.2f%%)\n", extrapolated_raw, true_milli, p * 100.0f);
+        measured_mA.push_back(extrapolated_raw);
+        true_mA.push_back(true_milli);
     }
-
-    // Take a short average of raw measurements
-    const int samples = 8;
-    float sumRaw = 0.0f;
-    for (int s = 0; s < samples; ++s)
-    {
-      ina.readSensors();
-      float raw = ina.getRawCurrent_mA();
-      sumRaw += raw;
-      delay(120);
-    }
-    float avgRaw = sumRaw / (float)samples;
-
-    Serial.printf("Recorded avg raw reading: %.3f mA  (expected true: %.3f mA)\n", avgRaw, true_milli);
-
-    measured_mA.push_back(avgRaw);
-    true_mA.push_back(true_milli);
   }
 
   size_t N = measured_mA.size();
@@ -583,6 +609,43 @@ void runProtectionConfigMenu(INA226_ADC &ina)
   Serial.println(F("Protection settings updated."));
 }
 
+void runExportCalibrationMenu(INA226_ADC &ina) {
+    Serial.println(F("\n--- Export Calibration Data ---"));
+    Serial.println(F("Choose shunt rating to export (50-500 A):"));
+    Serial.print(F("> "));
+
+    String sel = SerialReadLineBlocking();
+    if (sel.equalsIgnoreCase("x")) {
+        Serial.println(F("Export canceled."));
+        return;
+    }
+
+    int shuntA = sel.toInt();
+    if (shuntA < 50 || shuntA > 500 || (shuntA % 50) != 0) {
+        Serial.println(F("Invalid shunt rating. Aborting export."));
+        return;
+    }
+
+    if (!ina.loadCalibrationTable(shuntA)) {
+        Serial.printf("No calibration table found for %dA shunt. Cannot export.\n", shuntA);
+        return;
+    }
+
+    const std::vector<CalPoint>& table = ina.getCalibrationTable();
+    if (table.empty()) {
+        Serial.printf("Calibration table for %dA shunt is empty. Nothing to export.\n", shuntA);
+        return;
+    }
+
+    Serial.println(F("\n--- Copy the following C++ code ---"));
+    Serial.printf("std::vector<CalPoint> preCalibratedPoints_%d = {\n", shuntA);
+    for (const auto& point : table) {
+        Serial.printf("    {%.6f, %.6f},\n", point.raw_mA, point.true_mA);
+    }
+    Serial.println("};");
+    Serial.println(F("--- End of C++ code ---"));
+}
+
 
 void onDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
 {
@@ -751,6 +814,11 @@ void loop()
           ina226_adc.setLoadConnected(true, NONE);
           Serial.println("Load manually toggled ON");
       }
+    }
+    else if (s.equalsIgnoreCase("e"))
+    {
+      // export calibration data
+      runExportCalibrationMenu(ina226_adc);
     }
     // else ignore — keep running
   }

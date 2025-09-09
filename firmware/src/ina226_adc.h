@@ -69,6 +69,7 @@ public:
     // Save/load a piecewise calibration table for the given shunt
     bool saveCalibrationTable(uint16_t shuntRatedA, const std::vector<CalPoint> &points);
     bool loadCalibrationTable(uint16_t shuntRatedA);                     // loads into RAM; returns true if found
+    const std::vector<CalPoint>& getCalibrationTable() const;
     bool hasCalibrationTable() const;                                    // RAM presence
     bool hasStoredCalibrationTable(uint16_t shuntRatedA, size_t &countOut) const;
 

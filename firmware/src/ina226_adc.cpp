@@ -332,6 +332,10 @@ bool INA226_ADC::hasCalibrationTable() const {
     return !calibrationTable.empty();
 }
 
+const std::vector<CalPoint>& INA226_ADC::getCalibrationTable() const {
+    return calibrationTable;
+}
+
 bool INA226_ADC::hasStoredCalibrationTable(uint16_t shuntRatedA, size_t &countOut) const {
     Preferences prefs;
     prefs.begin("ina_cal", true);
