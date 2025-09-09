@@ -235,15 +235,14 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   // build measurement percentages
   std::vector<float> perc;
   perc.push_back(0.0f);    // 0%
-  perc.push_back(0.005f);  // 0.5%
-  perc.push_back(0.01f);   // 1%
-  perc.push_back(0.025f);  // 2.5%
-  perc.push_back(0.05f);   // 5%
-  perc.push_back(0.10f);   // 10%
-  perc.push_back(0.25f);   // 25%
-  perc.push_back(0.50f);   // 50%
-  perc.push_back(0.75f);   // 75%
-  perc.push_back(1.00f);   // 100%
+  perc.push_back(0.02f);   // 2%  (1A on 50A shunt)
+  perc.push_back(0.04f);   // 4%  (2A on 50A shunt)
+  perc.push_back(0.1f);    // 10% (5A on 50A shunt)
+  perc.push_back(0.2f);    // 20% (10A on 50A shunt)
+  perc.push_back(0.4f);    // 40% (20A on 50A shunt)
+  perc.push_back(0.6f);    // 60% (30A on 50A shunt)
+  perc.push_back(0.8f);    // 80% (40A on 50A shunt)
+  perc.push_back(1.0f);    // 100%(50A on 50A shunt)
 
   std::vector<float> measured_mA;
   std::vector<float> true_mA;
