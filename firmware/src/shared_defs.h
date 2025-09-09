@@ -6,6 +6,7 @@
 // Pin definitions
 #define LOAD_SWITCH_PIN 5
 #define INA_ALERT_PIN 7
+#define LED_PIN 4
 
 // NVS keys for protection settings
 #define NVS_PROTECTION_NAMESPACE "protection"

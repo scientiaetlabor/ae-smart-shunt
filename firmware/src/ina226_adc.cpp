@@ -55,7 +55,7 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
     ina226.setResistorRange(calibratedOhms, 100.0);
 
     loadProtectionSettings();
-    configureAlert();
+    configureAlert(overcurrentThreshold);
 }
 
 void INA226_ADC::readSensors() {
@@ -512,7 +512,7 @@ void INA226_ADC::setProtectionSettings(float lv_cutoff, float hyst, float oc_thr
     hysteresis = hyst;
     overcurrentThreshold = oc_thresh;
     saveProtectionSettings();
-    configureAlert(); // Re-configure alert with new threshold
+    configureAlert(overcurrentThreshold); // Re-configure alert with new threshold
 }
 
 float INA226_ADC::getLowVoltageCutoff() const {
@@ -565,14 +565,14 @@ bool INA226_ADC::isLoadConnected() const {
     return loadConnected;
 }
 
-void INA226_ADC::configureAlert() {
+void INA226_ADC::configureAlert(float amps) {
     // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)
-    float shuntVoltageLimit_V = overcurrentThreshold * calibratedOhms;
+    float shuntVoltageLimit_V = amps * calibratedOhms;
 
     ina226.setAlertType(SHUNT_OVER, shuntVoltageLimit_V);
     ina226.enableAlertLatch();
     Serial.printf("Configured INA226 alert for overcurrent threshold of %.2fA (Shunt Voltage > %.4fV)\n",
-                  overcurrentThreshold, shuntVoltageLimit_V);
+                  amps, shuntVoltageLimit_V);
 }
 
 void INA226_ADC::handleAlert() {
@@ -606,4 +606,12 @@ void INA226_ADC::enterSleepMode() {
 
 bool INA226_ADC::isConfigured() const {
     return m_isConfigured;
+}
+
+void INA226_ADC::setTempOvercurrentAlert(float amps) {
+    configureAlert(amps);
+}
+
+void INA226_ADC::restoreOvercurrentAlert() {
+    configureAlert(overcurrentThreshold);
 }

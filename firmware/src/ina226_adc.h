@@ -46,7 +46,9 @@ public:
     void checkAndHandleProtection();
     void setLoadConnected(bool connected);
     bool isLoadConnected() const;
-    void configureAlert();
+    void configureAlert(float amps);
+    void setTempOvercurrentAlert(float amps);
+    void restoreOvercurrentAlert();
     void handleAlert();
     void processAlert();
     bool isAlertTriggered() const;

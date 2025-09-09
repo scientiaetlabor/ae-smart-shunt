@@ -33,6 +33,10 @@ unsigned long last_ota_check = 0;
 const unsigned long loop_interval = 10000;
 unsigned long last_loop_millis = 0;
 
+// LED Heartbeat
+unsigned long last_led_blink = 0;
+const unsigned long led_blink_interval = 500; // ms
+
 struct_message_ae_smart_shunt_1 ae_smart_shunt_struct;
 // Initializing with a default shunt resistor value, which will be overwritten
 // if a calibrated value is loaded from NVS.
@@ -313,9 +317,89 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   else
   {
     Serial.println("\nCalibration failed: no points saved.");
+    return; // Can't run tests if calibration failed
   }
 
   Serial.println("These values are persisted and will be applied to subsequent current readings.");
+
+  // --- Guided Tests ---
+  Serial.println(F("\n--- Guided Hardware Tests ---"));
+  Serial.println(F("Would you like to run guided tests to verify hardware functionality? (y/N)"));
+  Serial.print(F("> "));
+  String testAns = SerialReadLineBlocking();
+  if (!testAns.equalsIgnoreCase("y")) {
+    Serial.println("Skipping hardware tests.");
+    return;
+  }
+
+  // Test 1: Load Switch Test
+  Serial.println(F("\n--- Test 1: Load Switch ---"));
+  Serial.println(F("This test will verify the load disconnect MOSFET."));
+  Serial.println(F("Please apply a constant 1A load, then press Enter."));
+  Serial.print(F("> "));
+  waitForEnterOrXWithDebug(ina, false);
+
+  delay(500);
+  ina.readSensors();
+  float current_before = ina.getCurrent_mA();
+  Serial.printf("Current before disconnect: %.3f mA\n", current_before);
+
+  Serial.println("Disconnecting load...");
+  ina.setLoadConnected(false);
+  delay(500); // Wait for load to disconnect and reading to settle
+
+  ina.readSensors();
+  float current_after = ina.getCurrent_mA();
+  float no_load_current = measured_mA[0]; // First point was zero-load
+  Serial.printf("Current after disconnect: %.3f mA (expected ~%.3f mA)\n", current_after, no_load_current);
+
+  if (abs(current_after - no_load_current) < 50.0f) { // Allow 50mA tolerance
+    Serial.println(F("SUCCESS: Load switch appears to be working."));
+  } else {
+    Serial.println(F("FAILURE: Current did not drop to no-load value. Check MOSFET wiring."));
+  }
+
+  // Reconnect load for next test
+  Serial.println("Reconnecting load...");
+  ina.setLoadConnected(true);
+  delay(500);
+
+  // Test 2: Overcurrent Alert Test
+  Serial.println(F("\n--- Test 2: Overcurrent Alert ---"));
+  Serial.println(F("This test will verify the INA226 alert functionality."));
+
+  float test_current = 0.5f; // 500mA
+  Serial.printf("The alert threshold will be temporarily set to %.3f A.\n", test_current);
+  Serial.println(F("Please ensure your load is set to 0A, then press Enter."));
+  Serial.print(F("> "));
+  waitForEnterOrXWithDebug(ina, false);
+
+  ina.setTempOvercurrentAlert(test_current);
+
+  Serial.println(F("Now, slowly increase the load. The load should disconnect when you exceed the test threshold."));
+  Serial.println(F("The test will wait for 15 seconds..."));
+
+  bool alert_fired = false;
+  unsigned long test_start = millis();
+  while(millis() - test_start < 15000) { // 15s timeout
+      if (ina.isAlertTriggered()) {
+          ina.processAlert();
+          alert_fired = true;
+          break;
+      }
+      delay(50);
+  }
+
+  if (alert_fired) {
+    Serial.println(F("SUCCESS: Overcurrent alert triggered and load was disconnected."));
+  } else {
+    Serial.println(F("FAILURE: Alert did not trigger within 15 seconds. Check INA226 wiring."));
+  }
+
+  // Restore original alert configuration
+  ina.restoreOvercurrentAlert();
+  // Ensure load is connected for normal operation
+  ina.setLoadConnected(true);
 }
 
 void printShunt(const struct_message_ae_smart_shunt_1 *p) {
@@ -505,6 +589,8 @@ void setup()
   Serial.begin(115200);
   delay(100); // let Serial start
 
+  pinMode(LED_PIN, OUTPUT);
+
 #ifdef USE_WIFI
   // WiFi connection
   WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -617,6 +703,12 @@ void setup()
 
 void loop()
 {
+  // LED Heartbeat
+  if (millis() - last_led_blink > led_blink_interval) {
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    last_led_blink = millis();
+  }
+
   if (ina226_adc.isAlertTriggered()) {
     ina226_adc.processAlert();
   }
@@ -642,6 +734,13 @@ void loop()
     {
       // run the protection configuration menu
       runProtectionConfigMenu(ina226_adc);
+    }
+    else if (s.equalsIgnoreCase("l"))
+    {
+      // toggle load connection
+      bool newState = !ina226_adc.isLoadConnected();
+      ina226_adc.setLoadConnected(newState);
+      Serial.printf("Load manually toggled %s\n", newState ? "ON" : "OFF");
     }
     // else ignore — keep running
   }
