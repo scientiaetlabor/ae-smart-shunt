@@ -351,7 +351,7 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   Serial.printf("Current before disconnect: %.3f mA\n", current_before);
 
   Serial.println("Disconnecting load...");
-  ina.setLoadConnected(false);
+  ina.setLoadConnected(false, MANUAL);
   delay(500); // Wait for load to disconnect and reading to settle
 
   ina.readSensors();
@@ -367,7 +367,7 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
 
   // Reconnect load for next test
   Serial.println("Reconnecting load...");
-  ina.setLoadConnected(true);
+  ina.setLoadConnected(true, NONE);
   delay(500);
 
   // Test 2: Overcurrent Alert Test
@@ -405,7 +405,7 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
   // Restore original alert configuration
   ina.restoreOvercurrentAlert();
   // Ensure load is connected for normal operation
-  ina.setLoadConnected(true);
+  ina.setLoadConnected(true, NONE);
 }
 
 void printShunt(const struct_message_ae_smart_shunt_1 *p) {
@@ -626,7 +626,7 @@ void setup()
     Serial.println("\n!!! DEVICE NOT CONFIGURED !!!");
     Serial.println("Load output has been disabled.");
     Serial.println("Please run Shunt Resistance Calibration ('r') and restart.");
-    ina226_adc.setLoadConnected(false);
+    ina226_adc.setLoadConnected(false, MANUAL);
   }
 
   // Check for and restore battery capacity from NVS
@@ -744,9 +744,13 @@ void loop()
     else if (s.equalsIgnoreCase("l"))
     {
       // toggle load connection
-      bool newState = !ina226_adc.isLoadConnected();
-      ina226_adc.setLoadConnected(newState);
-      Serial.printf("Load manually toggled %s\n", newState ? "ON" : "OFF");
+      if (ina226_adc.isLoadConnected()) {
+          ina226_adc.setLoadConnected(false, MANUAL);
+          Serial.println("Load manually toggled OFF");
+      } else {
+          ina226_adc.setLoadConnected(true, NONE);
+          Serial.println("Load manually toggled ON");
+      }
     }
     // else ignore — keep running
   }

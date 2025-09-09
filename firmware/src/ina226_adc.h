@@ -9,6 +9,8 @@
 #include <vector>
 #include "shared_defs.h"
 
+enum DisconnectReason { NONE, LOW_VOLTAGE, OVERCURRENT, MANUAL };
+
 struct CalPoint {
     float raw_mA;   // raw measured current from INA226 (mA)
     float true_mA;  // ground-truth current (mA)
@@ -44,7 +46,7 @@ public:
     float getHysteresis() const;
     float getOvercurrentThreshold() const;
     void checkAndHandleProtection();
-    void setLoadConnected(bool connected);
+    void setLoadConnected(bool connected, DisconnectReason reason = MANUAL);
     bool isLoadConnected() const;
     void configureAlert(float amps);
     void setTempOvercurrentAlert(float amps);
@@ -88,6 +90,7 @@ private:
     volatile bool alertTriggered;
     bool m_isConfigured;
     uint16_t m_activeShuntA;
+    DisconnectReason m_disconnectReason;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;

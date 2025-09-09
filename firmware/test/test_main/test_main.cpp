@@ -326,7 +326,7 @@ void test_overcurrent_disconnect(void) {
 void test_voltage_reconnect(void) {
     INA226_ADC adc(0x40, 0.001, 100.0);
     adc.setProtectionSettings(9.0f, 0.5f, 50.0f);
-    adc.setLoadConnected(false);
+    adc.setLoadConnected(false, LOW_VOLTAGE);
 
     INA226_WE::mockBusVoltage_V = 9.6f; // Above cutoff + hysteresis
     adc.readSensors();

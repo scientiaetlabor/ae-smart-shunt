@@ -23,6 +23,7 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       alertTriggered(false),
       m_isConfigured(false),
       m_activeShuntA(50), // Default to 50A
+      m_disconnectReason(NONE),
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -35,7 +36,7 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
     Wire.begin(sdaPin, sclPin);
 
     pinMode(LOAD_SWITCH_PIN, OUTPUT);
-    setLoadConnected(true);
+    setLoadConnected(true, NONE);
 
     pinMode(INA_ALERT_PIN, INPUT_PULLUP);
 
@@ -79,7 +80,9 @@ void INA226_ADC::readSensors() {
     shuntVoltage_mV = ina226.getShuntVoltage_mV();
     busVoltage_V = ina226.getBusVoltage_V();
     current_mA = ina226.getCurrent_mA(); // raw mA
-    power_mW = ina226.getBusPower();
+    // Calculate power manually, as the chip's internal calculation seems to be off.
+    // Use the calibrated current for this calculation.
+    power_mW = getBusVoltage_V() * getCurrent_mA();
     loadVoltage_V = busVoltage_V + (shuntVoltage_mV / 1000.0f);
 }
 
@@ -557,24 +560,29 @@ void INA226_ADC::checkAndHandleProtection() {
     if (isLoadConnected()) {
         if (voltage < lowVoltageCutoff) {
             Serial.printf("Low voltage detected (%.2fV < %.2fV). Disconnecting load.\n", voltage, lowVoltageCutoff);
-            setLoadConnected(false);
+            setLoadConnected(false, LOW_VOLTAGE);
             enterSleepMode();
         } else if (current > overcurrentThreshold) {
             Serial.printf("Overcurrent detected (%.2fA > %.2fA). Disconnecting load.\n", current, overcurrentThreshold);
-            setLoadConnected(false);
+            setLoadConnected(false, OVERCURRENT);
         }
     } else {
-        // If load is disconnected, check if it should be reconnected
-        if (voltage > (lowVoltageCutoff + hysteresis)) {
+        // If load is disconnected, only auto-reconnect if it was for low voltage
+        if (m_disconnectReason == LOW_VOLTAGE && voltage > (lowVoltageCutoff + hysteresis)) {
             Serial.printf("Voltage recovered (%.2fV > %.2fV). Reconnecting load.\n", voltage, lowVoltageCutoff + hysteresis);
-            setLoadConnected(true);
+            setLoadConnected(true, NONE);
         }
     }
 }
 
-void INA226_ADC::setLoadConnected(bool connected) {
+void INA226_ADC::setLoadConnected(bool connected, DisconnectReason reason) {
     digitalWrite(LOAD_SWITCH_PIN, connected ? HIGH : LOW);
     loadConnected = connected;
+    if (connected) {
+        m_disconnectReason = NONE;
+    } else {
+        m_disconnectReason = reason;
+    }
 }
 
 bool INA226_ADC::isLoadConnected() const {
@@ -599,7 +607,7 @@ void INA226_ADC::processAlert() {
     if (alertTriggered) {
         if (isLoadConnected()) { // Only process if the load is currently connected
             Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
-            setLoadConnected(false);
+            setLoadConnected(false, OVERCURRENT);
         }
         ina226.readAndClearFlags(); // Always clear the alert on the chip
         alertTriggered = false; // Reset the software flag
