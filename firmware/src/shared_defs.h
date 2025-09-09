@@ -8,7 +8,9 @@
 #define INA_ALERT_PIN 7
 #define LED_PIN 4
 
-// NVS keys for protection settings
+// NVS keys
+#define NVS_CAL_NAMESPACE "ina_cal"
+#define NVS_KEY_ACTIVE_SHUNT "active_shunt"
 #define NVS_PROTECTION_NAMESPACE "protection"
 #define NVS_KEY_LOW_VOLTAGE_CUTOFF "lv_cutoff"
 #define NVS_KEY_HYSTERESIS "hysteresis"

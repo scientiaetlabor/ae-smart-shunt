@@ -87,6 +87,7 @@ private:
     bool loadConnected;
     volatile bool alertTriggered;
     bool m_isConfigured;
+    uint16_t m_activeShuntA;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;

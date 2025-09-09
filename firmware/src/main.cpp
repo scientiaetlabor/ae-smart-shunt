@@ -203,6 +203,13 @@ void runCurrentCalibrationMenu(INA226_ADC &ina)
     return;
   }
 
+  // Save the selected shunt as the active one
+  Preferences prefs;
+  prefs.begin(NVS_CAL_NAMESPACE, false);
+  prefs.putUShort(NVS_KEY_ACTIVE_SHUNT, shuntA);
+  prefs.end();
+  Serial.printf("Set %dA as active shunt.\n", shuntA);
+
   // Show existing linear + table calibration (if any)
   float g0, o0;
   bool hadLinear = ina.loadCalibration(shuntA);

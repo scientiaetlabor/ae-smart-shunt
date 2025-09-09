@@ -22,6 +22,7 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       loadConnected(true),
       alertTriggered(false),
       m_isConfigured(false),
+      m_activeShuntA(50), // Default to 50A
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -38,6 +39,13 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
 
     pinMode(INA_ALERT_PIN, INPUT_PULLUP);
 
+    // Load active shunt rating
+    Preferences prefs;
+    prefs.begin(NVS_CAL_NAMESPACE, true);
+    m_activeShuntA = prefs.getUShort(NVS_KEY_ACTIVE_SHUNT, 50); // Default 50A
+    prefs.end();
+    Serial.printf("Using active shunt rating: %dA\n", m_activeShuntA);
+
     ina226.init();
     ina226.waitUntilConversionCompleted();
 
@@ -52,7 +60,15 @@ void INA226_ADC::begin(int sdaPin, int sclPin) {
     }
     
     // Set the resistor range with the calibrated or default value
-    ina226.setResistorRange(calibratedOhms, 100.0);
+    ina226.setResistorRange(calibratedOhms, (float)m_activeShuntA);
+    Serial.printf("Set INA226 range for %.2fA\n", (float)m_activeShuntA);
+
+    // Load the calibration table for the active shunt
+    if (loadCalibrationTable(m_activeShuntA)) {
+        Serial.printf("Loaded calibration table for %dA shunt.\n", m_activeShuntA);
+    } else {
+        Serial.printf("No calibration table found for %dA shunt.\n", m_activeShuntA);
+    }
 
     loadProtectionSettings();
     configureAlert(overcurrentThreshold);
