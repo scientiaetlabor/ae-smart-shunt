@@ -576,6 +576,7 @@ void INA226_ADC::checkAndHandleProtection() {
 }
 
 void INA226_ADC::setLoadConnected(bool connected, DisconnectReason reason) {
+    Serial.printf("DEBUG: setLoadConnected called. Target state: %s, Reason: %d\n", connected ? "ON" : "OFF", reason);
     digitalWrite(LOAD_SWITCH_PIN, connected ? HIGH : LOW);
     loadConnected = connected;
     if (connected) {
@@ -583,6 +584,7 @@ void INA226_ADC::setLoadConnected(bool connected, DisconnectReason reason) {
     } else {
         m_disconnectReason = reason;
     }
+    Serial.printf("DEBUG: setLoadConnected finished. Internal state: loadConnected=%s, m_disconnectReason=%d\n", loadConnected ? "true" : "false", m_disconnectReason);
 }
 
 bool INA226_ADC::isLoadConnected() const {
