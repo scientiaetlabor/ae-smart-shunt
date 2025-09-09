@@ -20,6 +20,7 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       hysteresis(0.6f),       // Default hysteresis
       overcurrentThreshold(50.0f), // Default 50A
       loadConnected(true),
+      alertTriggered(false),
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -558,9 +559,20 @@ void INA226_ADC::configureAlert() {
 }
 
 void INA226_ADC::handleAlert() {
-    Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
-    setLoadConnected(false);
-    ina226.readAndClearFlags(); // Clear the alert latch
+    alertTriggered = true;
+}
+
+void INA226_ADC::processAlert() {
+    if (alertTriggered) {
+        Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
+        setLoadConnected(false);
+        ina226.readAndClearFlags(); // Clear the alert latch
+        alertTriggered = false; // Reset the flag
+    }
+}
+
+bool INA226_ADC::isAlertTriggered() const {
+    return alertTriggered;
 }
 
 void INA226_ADC::enterSleepMode() {

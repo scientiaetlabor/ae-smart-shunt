@@ -601,6 +601,10 @@ void setup()
 
 void loop()
 {
+  if (ina226_adc.isAlertTriggered()) {
+    ina226_adc.processAlert();
+  }
+
   daily_ota_check();
 
   // Check serial for calibration command

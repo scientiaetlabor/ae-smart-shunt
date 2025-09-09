@@ -340,10 +340,16 @@ void test_alert_disconnect(void) {
     INA226_ADC adc(0x40, 0.001, 100.0);
     adc.setLoadConnected(true);
 
+    // Simulate ISR
     adc.handleAlert();
+    TEST_ASSERT_TRUE(adc.isAlertTriggered());
+
+    // Simulate main loop processing
+    adc.processAlert();
 
     TEST_ASSERT_FALSE(adc.isLoadConnected());
     TEST_ASSERT_EQUAL(LOW, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+    TEST_ASSERT_FALSE(adc.isAlertTriggered());
 }
 
 int main(int argc, char **argv) {

@@ -48,6 +48,8 @@ public:
     bool isLoadConnected() const;
     void configureAlert();
     void handleAlert();
+    void processAlert();
+    bool isAlertTriggered() const;
     void enterSleepMode();
 
     // ---------- Linear calibration (legacy / fallback) ----------
@@ -79,6 +81,7 @@ private:
     float hysteresis;
     float overcurrentThreshold;
     bool loadConnected;
+    volatile bool alertTriggered;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;
