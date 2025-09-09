@@ -201,14 +201,29 @@ bool INA226_ADC::saveShuntResistance(float resistance) {
 // New method to load calibrated shunt resistance from NVS
 bool INA226_ADC::loadShuntResistance() {
     Preferences prefs;
-    prefs.begin("ina_cal", true);
+    // Start preferences in read-only mode
+    if (!prefs.begin("ina_cal", true)) {
+        // Namespace does not exist, so it's not configured.
+        // We can end here, no need to print an error as this is expected on first boot.
+        prefs.end();
+        return false;
+    }
+
+    // Check if the key exists
+    if (!prefs.isKey("cal_ohms")) {
+        prefs.end();
+        return false;
+    }
+
     float resistance = prefs.getFloat("cal_ohms", -1.0f);
     prefs.end();
+
     if (resistance > 0.0f) {
         calibratedOhms = resistance;
         Serial.printf("Loaded calibrated shunt resistance: %.9f Ohms.\n", calibratedOhms);
         return true;
     }
+
     return false;
 }
 
