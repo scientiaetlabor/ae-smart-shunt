@@ -50,6 +50,7 @@ public:
     void handleAlert();
     void processAlert();
     bool isAlertTriggered() const;
+    void clearAlerts();
     void enterSleepMode();
 
     // ---------- Linear calibration (legacy / fallback) ----------

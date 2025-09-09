@@ -577,6 +577,10 @@ bool INA226_ADC::isAlertTriggered() const {
     return alertTriggered;
 }
 
+void INA226_ADC::clearAlerts() {
+    ina226.readAndClearFlags();
+}
+
 void INA226_ADC::enterSleepMode() {
     Serial.println("Entering deep sleep to conserve power.");
     esp_sleep_enable_timer_wakeup(10 * 1000000); // Wake up every 10 seconds

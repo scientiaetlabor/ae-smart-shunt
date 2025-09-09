@@ -518,6 +518,8 @@ void setup()
   // The begin method now handles loading the calibrated resistance
   ina226_adc.begin(6, 10);
 
+  // Clear any startup alerts before attaching the interrupt
+  ina226_adc.clearAlerts();
   // Attach interrupt for INA226 alert pin
   attachInterrupt(digitalPinToInterrupt(INA_ALERT_PIN), alertISR, FALLING);
 
