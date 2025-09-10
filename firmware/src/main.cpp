@@ -185,6 +185,13 @@ static String waitForEnterOrXWithDebug(INA226_ADC &ina, bool debugMode)
 // Renamed from runCalibrationMenu to be more specific
 void runCurrentCalibrationMenu(INA226_ADC &ina)
 {
+  // First, check if the base shunt resistance has been calibrated.
+  if (!ina.isConfigured()) {
+    Serial.println(F("\n[ERROR] Base shunt resistance has not been calibrated."));
+    Serial.println(F("Please run the 'r' (Shunt Resistance Calibration) command first."));
+    return;
+  }
+
   // Ensure load is enabled for calibration
   ina.setLoadConnected(true, MANUAL);
   Serial.println(F("Load enabled for calibration."));

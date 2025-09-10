@@ -215,6 +215,14 @@ bool INA226_ADC::saveShuntResistance(float resistance) {
     prefs.putFloat("cal_ohms", resistance);
     prefs.end();
     calibratedOhms = resistance;
+
+    // Immediately apply the new resistance to the INA226 configuration
+    ina226.setResistorRange(calibratedOhms, (float)m_activeShuntA);
+    Serial.printf("Live INA226 configuration updated for new shunt resistance and %dA range.\n", m_activeShuntA);
+
+    // Mark the device as configured now
+    m_isConfigured = true;
+
     return true;
 }
 
