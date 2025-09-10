@@ -598,8 +598,8 @@ bool INA226_ADC::isLoadConnected() const {
 
 void INA226_ADC::configureAlert(float amps) {
     if (m_hardwareAlertsDisabled) {
-        // Disable the alert by setting the type to OFF
-        ina226.setAlertType(OFF, 0.0);
+        // Disable alerts by clearing the Mask/Enable Register
+        ina226.writeRegister(INA226_WE::INA226_MASK_EN_REG, 0x0000);
         Serial.println("INA226 hardware alert DISABLED.");
     } else {
         // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)

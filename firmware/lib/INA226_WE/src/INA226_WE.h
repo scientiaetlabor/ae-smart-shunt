@@ -138,7 +138,8 @@ class INA226_WE
         uint8_t getI2cErrorCode();
         bool overflow;
         bool convAlert;
-        bool limitAlert;    
+        bool limitAlert;
+        void writeRegister(uint8_t reg, uint16_t val);
     
     protected:
         INA226_AVERAGES deviceAverages;
@@ -154,7 +155,6 @@ class INA226_WE
         float currentDivider_mA;
         float pwrMultiplier_mW;
         uint8_t i2cErrorCode;
-        void writeRegister(uint8_t reg, uint16_t val);
         uint16_t readRegister(uint8_t reg);
 };
 
