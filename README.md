@@ -47,6 +47,8 @@ The smart shunt is configured via a simple serial command-line interface. When c
 | `r` | **Shunt Resistance Calibration** | Runs a routine to calculate the precise resistance of your shunt. **This must be run before first use.** |
 | `p` | **Protection Settings** | Allows you to configure the thresholds for Low-Voltage Cutoff, Hysteresis, and Overcurrent Protection. |
 | `l` | **Load Toggle** | Manually toggles the load disconnect MOSFET ON or OFF. Useful for testing the hardware circuit. |
+| `a` | **Alert Toggle** | Toggles the hardware overcurrent alert ON or OFF. Useful for debugging. |
+| `s` | **Status Display** | Displays the current protection settings, including the actual hardware alert threshold read from the INA226. |
 
 # v0.0.1
 Version 0.0.1 has been prototyped. I will hand assemble some test boards and do some testing. ~ETA for completion is 10/8/25.
