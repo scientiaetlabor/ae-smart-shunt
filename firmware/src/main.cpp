@@ -185,6 +185,10 @@ static String waitForEnterOrXWithDebug(INA226_ADC &ina, bool debugMode)
 // Renamed from runCalibrationMenu to be more specific
 void runCurrentCalibrationMenu(INA226_ADC &ina)
 {
+  // Ensure load is enabled for calibration
+  ina.setLoadConnected(true, MANUAL);
+  Serial.println(F("Load enabled for calibration."));
+
   Serial.println(F("\n--- Current Calibration Menu ---"));
   Serial.println(F("Choose installed shunt rating (50-500 A in 50A steps) or 'x' to cancel:"));
   Serial.print(F("> "));
@@ -464,6 +468,10 @@ void printShunt(const struct_message_ae_smart_shunt_1 *p) {
 // New function to handle shunt resistance calibration
 void runShuntResistanceCalibration(INA226_ADC &ina)
 {
+  // Ensure load is enabled for calibration
+  ina.setLoadConnected(true, MANUAL);
+  Serial.println(F("Load enabled for calibration."));
+
   Serial.println(F("\n--- Shunt Resistance Calibration ---"));
   Serial.println(F("Ensure a constant current load is applied."));
   Serial.println(F("This routine will calculate the actual shunt resistance based on measured shunt voltage at various current levels."));
