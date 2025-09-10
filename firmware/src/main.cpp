@@ -840,8 +840,11 @@ void loop()
       Serial.println();
       Serial.print(F("Hardware Alerts      : "));
       Serial.println(ina226_adc.areHardwareAlertsDisabled() ? "DISABLED" : "ENABLED");
-      Serial.print(F("Overcurrent Threshold: "));
+      Serial.print(F("Configured Threshold : "));
       Serial.print(ina226_adc.getOvercurrentThreshold());
+      Serial.println(F(" A"));
+      Serial.print(F("Actual HW Threshold  : "));
+      Serial.print(ina226_adc.getHardwareAlertThreshold_A());
       Serial.println(F(" A"));
       Serial.print(F("Low Voltage Cutoff   : "));
       Serial.print(ina226_adc.getLowVoltageCutoff());

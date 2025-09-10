@@ -551,6 +551,22 @@ float INA226_ADC::getOvercurrentThreshold() const {
     return overcurrentThreshold;
 }
 
+float INA226_ADC::getHardwareAlertThreshold_A() const {
+    // Read the raw value from the INA226 Alert Limit Register
+    uint16_t alertLimitRaw = ina226.readRegister(INA226_WE::INA226_ALERT_LIMIT_REG);
+
+    // The alert is on Shunt Voltage, LSB is 2.5µV.
+    // V_shunt = raw_value * 2.5µV
+    float shuntVoltageLimit_V = alertLimitRaw * 2.5e-6f;
+
+    // Convert shunt voltage limit to current limit using Ohm's law: I = V/R
+    if (calibratedOhms > 0.0f) {
+        return shuntVoltageLimit_V / calibratedOhms;
+    } else {
+        return 0.0f; // Avoid division by zero
+    }
+}
+
 void INA226_ADC::checkAndHandleProtection() {
     float voltage = getBusVoltage_V();
     float current = getCurrent_mA() / 1000.0f;
