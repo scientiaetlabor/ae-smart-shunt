@@ -57,6 +57,10 @@ public:
     void clearAlerts();
     void enterSleepMode();
     bool isConfigured() const;
+    void toggleHardwareAlerts();
+    bool areHardwareAlertsDisabled() const;
+    float getHardwareAlertThreshold_A() const;
+    void dumpRegisters() const;
 
     // ---------- Linear calibration (legacy / fallback) ----------
     bool loadCalibration(uint16_t shuntRatedA);                          // apply stored linear (gain/offset)
@@ -92,6 +96,7 @@ private:
     bool m_isConfigured;
     uint16_t m_activeShuntA;
     DisconnectReason m_disconnectReason;
+    bool m_hardwareAlertsDisabled;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;

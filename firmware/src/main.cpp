@@ -185,6 +185,17 @@ static String waitForEnterOrXWithDebug(INA226_ADC &ina, bool debugMode)
 // Renamed from runCalibrationMenu to be more specific
 void runCurrentCalibrationMenu(INA226_ADC &ina)
 {
+  // First, check if the base shunt resistance has been calibrated.
+  if (!ina.isConfigured()) {
+    Serial.println(F("\n[ERROR] Base shunt resistance has not been calibrated."));
+    Serial.println(F("Please run the 'r' (Shunt Resistance Calibration) command first."));
+    return;
+  }
+
+  // Ensure load is enabled for calibration
+  ina.setLoadConnected(true, MANUAL);
+  Serial.println(F("Load enabled for calibration."));
+
   Serial.println(F("\n--- Current Calibration Menu ---"));
   Serial.println(F("Choose installed shunt rating (50-500 A in 50A steps) or 'x' to cancel:"));
   Serial.print(F("> "));
@@ -464,6 +475,10 @@ void printShunt(const struct_message_ae_smart_shunt_1 *p) {
 // New function to handle shunt resistance calibration
 void runShuntResistanceCalibration(INA226_ADC &ina)
 {
+  // Ensure load is enabled for calibration
+  ina.setLoadConnected(true, MANUAL);
+  Serial.println(F("Load enabled for calibration."));
+
   Serial.println(F("\n--- Shunt Resistance Calibration ---"));
   Serial.println(F("Ensure a constant current load is applied."));
   Serial.println(F("This routine will calculate the actual shunt resistance based on measured shunt voltage at various current levels."));
@@ -819,6 +834,45 @@ void loop()
     {
       // export calibration data
       runExportCalibrationMenu(ina226_adc);
+    }
+    else if (s.equalsIgnoreCase("a"))
+    {
+      // toggle hardware alert
+      ina226_adc.toggleHardwareAlerts();
+      if (ina226_adc.areHardwareAlertsDisabled()) {
+          Serial.println("Hardware alerts DISABLED.");
+      } else {
+          Serial.println("Hardware alerts ENABLED.");
+      }
+    }
+    else if (s.equalsIgnoreCase("s"))
+    {
+      // print protection status
+      Serial.println(F("\n--- Protection Status ---"));
+      int alertPinState = digitalRead(INA_ALERT_PIN);
+      Serial.print(F("Alert Pin State      : "));
+      Serial.print(alertPinState == HIGH ? "INACTIVE (HIGH)" : "ACTIVE (LOW)");
+      Serial.println();
+      Serial.print(F("Hardware Alerts      : "));
+      Serial.println(ina226_adc.areHardwareAlertsDisabled() ? "DISABLED" : "ENABLED");
+      Serial.print(F("Configured Threshold : "));
+      Serial.print(ina226_adc.getOvercurrentThreshold());
+      Serial.println(F(" A"));
+      Serial.print(F("Actual HW Threshold  : "));
+      Serial.print(ina226_adc.getHardwareAlertThreshold_A());
+      Serial.println(F(" A"));
+      Serial.print(F("Low Voltage Cutoff   : "));
+      Serial.print(ina226_adc.getLowVoltageCutoff());
+      Serial.println(F(" V"));
+      Serial.print(F("Hysteresis           : "));
+      Serial.print(ina226_adc.getHysteresis());
+      Serial.println(F(" V"));
+      Serial.println(F("-------------------------"));
+    }
+    else if (s.equalsIgnoreCase("d"))
+    {
+      // dump INA226 registers
+      ina226_adc.dumpRegisters();
     }
     // else ignore — keep running
   }

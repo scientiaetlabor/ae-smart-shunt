@@ -199,10 +199,10 @@ void INA226_WE::setAlertType(INA226_ALERT_TYPE type, float limit){
     
     switch(deviceAlertType){
         case SHUNT_OVER:
-            alertLimit = limit * 400;           
+            alertLimit = limit * 400000;
             break;
         case SHUNT_UNDER:
-            alertLimit = limit * 400; 
+            alertLimit = limit * 400000;
             break;
         case CURRENT_OVER:
             deviceAlertType = SHUNT_OVER;
@@ -258,7 +258,7 @@ void INA226_WE::writeRegister(uint8_t reg, uint16_t val){
   _wire->endTransmission();
 }
   
-uint16_t INA226_WE::readRegister(uint8_t reg){
+uint16_t INA226_WE::readRegister(uint8_t reg) const {
   uint8_t MSByte = 0, LSByte = 0;
   uint16_t regValue = 0;
   _wire->beginTransmission(i2cAddress);

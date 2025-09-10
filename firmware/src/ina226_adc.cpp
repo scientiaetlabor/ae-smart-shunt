@@ -24,6 +24,7 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       m_isConfigured(false),
       m_activeShuntA(50), // Default to 50A
       m_disconnectReason(NONE),
+      m_hardwareAlertsDisabled(false),
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -214,6 +215,14 @@ bool INA226_ADC::saveShuntResistance(float resistance) {
     prefs.putFloat("cal_ohms", resistance);
     prefs.end();
     calibratedOhms = resistance;
+
+    // Immediately apply the new resistance to the INA226 configuration
+    ina226.setResistorRange(calibratedOhms, (float)m_activeShuntA);
+    Serial.printf("Live INA226 configuration updated for new shunt resistance and %dA range.\n", m_activeShuntA);
+
+    // Mark the device as configured now
+    m_isConfigured = true;
+
     return true;
 }
 
@@ -550,6 +559,22 @@ float INA226_ADC::getOvercurrentThreshold() const {
     return overcurrentThreshold;
 }
 
+float INA226_ADC::getHardwareAlertThreshold_A() const {
+    // Read the raw value from the INA226 Alert Limit Register
+    uint16_t alertLimitRaw = ina226.readRegister(INA226_WE::INA226_ALERT_LIMIT_REG);
+
+    // The alert is on Shunt Voltage, LSB is 2.5µV.
+    // V_shunt = raw_value * 2.5µV
+    float shuntVoltageLimit_V = alertLimitRaw * 2.5e-6f;
+
+    // Convert shunt voltage limit to current limit using Ohm's law: I = V/R
+    if (calibratedOhms > 0.0f) {
+        return shuntVoltageLimit_V / calibratedOhms;
+    } else {
+        return 0.0f; // Avoid division by zero
+    }
+}
+
 void INA226_ADC::checkAndHandleProtection() {
     float voltage = getBusVoltage_V();
     float current = getCurrent_mA() / 1000.0f;
@@ -596,13 +621,19 @@ bool INA226_ADC::isLoadConnected() const {
 }
 
 void INA226_ADC::configureAlert(float amps) {
-    // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)
-    float shuntVoltageLimit_V = amps * calibratedOhms;
+    if (m_hardwareAlertsDisabled) {
+        // Disable alerts by clearing the Mask/Enable Register
+        ina226.writeRegister(INA226_WE::INA226_MASK_EN_REG, 0x0000);
+        Serial.println("INA226 hardware alert DISABLED.");
+    } else {
+        // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)
+        float shuntVoltageLimit_V = amps * calibratedOhms;
 
-    ina226.setAlertType(SHUNT_OVER, shuntVoltageLimit_V);
-    ina226.enableAlertLatch();
-    Serial.printf("Configured INA226 alert for overcurrent threshold of %.2fA (Shunt Voltage > %.4fV)\n",
-                  amps, shuntVoltageLimit_V);
+        ina226.setAlertType(SHUNT_OVER, shuntVoltageLimit_V);
+        ina226.enableAlertLatch();
+        Serial.printf("Configured INA226 alert for overcurrent threshold of %.2fA (Shunt Voltage > %.4fV)\n",
+                      amps, shuntVoltageLimit_V);
+    }
 }
 
 void INA226_ADC::handleAlert() {
@@ -611,6 +642,12 @@ void INA226_ADC::handleAlert() {
 
 void INA226_ADC::processAlert() {
     if (alertTriggered) {
+        if (m_hardwareAlertsDisabled) {
+            // If alerts are disabled, just clear the flag and do nothing else.
+            alertTriggered = false;
+            ina226.readAndClearFlags();
+            return;
+        }
         if (isLoadConnected()) { // Only process if the load is currently connected
             Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
             setLoadConnected(false, OVERCURRENT);
@@ -644,4 +681,36 @@ void INA226_ADC::setTempOvercurrentAlert(float amps) {
 
 void INA226_ADC::restoreOvercurrentAlert() {
     configureAlert(overcurrentThreshold);
+}
+
+void INA226_ADC::toggleHardwareAlerts() {
+    m_hardwareAlertsDisabled = !m_hardwareAlertsDisabled;
+    // Re-apply the alert configuration to either enable or disable it on the chip
+    configureAlert(overcurrentThreshold);
+}
+
+bool INA226_ADC::areHardwareAlertsDisabled() const {
+    return m_hardwareAlertsDisabled;
+}
+
+void INA226_ADC::dumpRegisters() const {
+    Serial.println(F("\n--- INA226 Register Dump ---"));
+
+    uint16_t confReg = ina226.readRegister(INA226_WE::INA226_CONF_REG);
+    Serial.print(F("Config (0x00)        : 0x"));
+    Serial.println(confReg, HEX);
+
+    uint16_t calReg = ina226.readRegister(INA226_WE::INA226_CAL_REG);
+    Serial.print(F("Calibration (0x05)   : 0x"));
+    Serial.println(calReg, HEX);
+
+    uint16_t maskEnReg = ina226.readRegister(INA226_WE::INA226_MASK_EN_REG);
+    Serial.print(F("Mask/Enable (0x06)   : 0x"));
+    Serial.println(maskEnReg, HEX);
+
+    uint16_t alertLimitReg = ina226.readRegister(INA226_WE::INA226_ALERT_LIMIT_REG);
+    Serial.print(F("Alert Limit (0x07)   : 0x"));
+    Serial.println(alertLimitReg, HEX);
+
+    Serial.println(F("----------------------------"));
 }
