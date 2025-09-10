@@ -26,6 +26,8 @@ void setUp(void) {
     INA226_WE::overflow = false;
     set_mock_millis(0);
     Preferences::clear_static();
+    mock_digital_write_clear();
+    mock_esp_deep_sleep_clear();
 }
 
 void tearDown(void) {
@@ -272,6 +274,84 @@ void test_main_loop_logic(void) {
     TEST_ASSERT_EQUAL_FLOAT((ratedCapacity - 2.5) / ratedCapacity, shunt_message.batterySOC);
 }
 
+void test_protection_settings_persistence(void) {
+    float lv_cutoff = 8.5f;
+    float hysteresis = 0.8f;
+    float oc_thresh = 60.0f;
+
+    // 1. Save settings
+    {
+        INA226_ADC adc(0x40, 0.001, 100.0);
+        adc.setProtectionSettings(lv_cutoff, hysteresis, oc_thresh);
+    }
+
+    // 2. Load settings into a new instance
+    {
+        INA226_ADC adc2(0x40, 0.001, 100.0);
+        adc2.loadProtectionSettings();
+        TEST_ASSERT_EQUAL_FLOAT(lv_cutoff, adc2.getLowVoltageCutoff());
+        TEST_ASSERT_EQUAL_FLOAT(hysteresis, adc2.getHysteresis());
+        TEST_ASSERT_EQUAL_FLOAT(oc_thresh, adc2.getOvercurrentThreshold());
+    }
+}
+
+void test_low_voltage_disconnect(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setProtectionSettings(9.0f, 0.5f, 50.0f);
+    adc.setLoadConnected(true);
+
+    INA226_WE::mockBusVoltage_V = 8.9f; // Below cutoff
+    adc.readSensors();
+    adc.checkAndHandleProtection();
+
+    TEST_ASSERT_FALSE(adc.isLoadConnected());
+    TEST_ASSERT_EQUAL(LOW, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+    TEST_ASSERT_TRUE(mock_esp_deep_sleep_called());
+}
+
+void test_overcurrent_disconnect(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setProtectionSettings(9.0f, 0.5f, 50.0f);
+    adc.setLoadConnected(true);
+
+    INA226_WE::mockCurrent_mA = 51000.0f; // 51A, above threshold
+    adc.readSensors();
+    adc.checkAndHandleProtection();
+
+    TEST_ASSERT_FALSE(adc.isLoadConnected());
+    TEST_ASSERT_EQUAL(LOW, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+    TEST_ASSERT_FALSE(mock_esp_deep_sleep_called()); // No sleep on overcurrent
+}
+
+void test_voltage_reconnect(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setProtectionSettings(9.0f, 0.5f, 50.0f);
+    adc.setLoadConnected(false, LOW_VOLTAGE);
+
+    INA226_WE::mockBusVoltage_V = 9.6f; // Above cutoff + hysteresis
+    adc.readSensors();
+    adc.checkAndHandleProtection();
+
+    TEST_ASSERT_TRUE(adc.isLoadConnected());
+    TEST_ASSERT_EQUAL(HIGH, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+}
+
+void test_alert_disconnect(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setLoadConnected(true);
+
+    // Simulate ISR
+    adc.handleAlert();
+    TEST_ASSERT_TRUE(adc.isAlertTriggered());
+
+    // Simulate main loop processing
+    adc.processAlert();
+
+    TEST_ASSERT_FALSE(adc.isLoadConnected());
+    TEST_ASSERT_EQUAL(LOW, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+    TEST_ASSERT_FALSE(adc.isAlertTriggered());
+}
+
 int main(int argc, char **argv) {
     UNITY_BEGIN();
     RUN_TEST(test_current_calibration);
@@ -281,6 +361,43 @@ int main(int argc, char **argv) {
     RUN_TEST(test_calibration_persistence);
     RUN_TEST(test_espnow_handler);
     RUN_TEST(test_main_loop_logic);
+    RUN_TEST(test_protection_settings_persistence);
+    RUN_TEST(test_low_voltage_disconnect);
+    RUN_TEST(test_overcurrent_disconnect);
+    RUN_TEST(test_voltage_reconnect);
+    RUN_TEST(test_alert_disconnect);
+    RUN_TEST(test_usb_power_no_disconnect);
+    RUN_TEST(test_alert_ignored_when_disconnected);
     UNITY_END();
     return 0;
+}
+
+void test_usb_power_no_disconnect(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setProtectionSettings(9.0f, 0.5f, 50.0f);
+    adc.setLoadConnected(true);
+
+    INA226_WE::mockBusVoltage_V = 5.0f; // USB power
+    adc.readSensors();
+    adc.checkAndHandleProtection();
+
+    TEST_ASSERT_TRUE(adc.isLoadConnected());
+    TEST_ASSERT_EQUAL(HIGH, mock_digital_write_get_last_value(LOAD_SWITCH_PIN));
+    TEST_ASSERT_FALSE(mock_esp_deep_sleep_called());
+}
+
+void test_alert_ignored_when_disconnected(void) {
+    INA226_ADC adc(0x40, 0.001, 100.0);
+    adc.setLoadConnected(false);
+
+    // Simulate ISR
+    adc.handleAlert();
+    TEST_ASSERT_TRUE(adc.isAlertTriggered());
+
+    // Simulate main loop processing
+    adc.processAlert();
+
+    // Assert that the load is still disconnected and the flag is cleared
+    TEST_ASSERT_FALSE(adc.isLoadConnected());
+    TEST_ASSERT_FALSE(adc.isAlertTriggered());
 }

@@ -7,6 +7,9 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include <vector>
+#include "shared_defs.h"
+
+enum DisconnectReason { NONE, LOW_VOLTAGE, OVERCURRENT, MANUAL };
 
 struct CalPoint {
     float raw_mA;   // raw measured current from INA226 (mA)
@@ -35,6 +38,26 @@ public:
     bool saveShuntResistance(float resistance);
     bool loadShuntResistance();
 
+    // Protection features
+    void loadProtectionSettings();
+    void saveProtectionSettings();
+    void setProtectionSettings(float lv_cutoff, float hyst, float oc_thresh);
+    float getLowVoltageCutoff() const;
+    float getHysteresis() const;
+    float getOvercurrentThreshold() const;
+    void checkAndHandleProtection();
+    void setLoadConnected(bool connected, DisconnectReason reason = MANUAL);
+    bool isLoadConnected() const;
+    void configureAlert(float amps);
+    void setTempOvercurrentAlert(float amps);
+    void restoreOvercurrentAlert();
+    void handleAlert();
+    void processAlert();
+    bool isAlertTriggered() const;
+    void clearAlerts();
+    void enterSleepMode();
+    bool isConfigured() const;
+
     // ---------- Linear calibration (legacy / fallback) ----------
     bool loadCalibration(uint16_t shuntRatedA);                          // apply stored linear (gain/offset)
     bool saveCalibration(uint16_t shuntRatedA, float gain, float offset_mA);
@@ -46,6 +69,7 @@ public:
     // Save/load a piecewise calibration table for the given shunt
     bool saveCalibrationTable(uint16_t shuntRatedA, const std::vector<CalPoint> &points);
     bool loadCalibrationTable(uint16_t shuntRatedA);                     // loads into RAM; returns true if found
+    const std::vector<CalPoint>& getCalibrationTable() const;
     bool hasCalibrationTable() const;                                    // RAM presence
     bool hasStoredCalibrationTable(uint16_t shuntRatedA, size_t &countOut) const;
 
@@ -58,6 +82,16 @@ private:
     unsigned long lastUpdateTime;
     float shuntVoltage_mV, loadVoltage_V, busVoltage_V, current_mA, power_mW;
     float calibrationGain, calibrationOffset_mA;
+
+    // Protection settings
+    float lowVoltageCutoff;
+    float hysteresis;
+    float overcurrentThreshold;
+    bool loadConnected;
+    volatile bool alertTriggered;
+    bool m_isConfigured;
+    uint16_t m_activeShuntA;
+    DisconnectReason m_disconnectReason;
 
     // Table-based calibration
     std::vector<CalPoint> calibrationTable;

@@ -3,6 +3,19 @@
 
 #include <stdint.h>
 
+// Pin definitions
+#define LOAD_SWITCH_PIN 5
+#define INA_ALERT_PIN 7
+#define LED_PIN 4
+
+// NVS keys
+#define NVS_CAL_NAMESPACE "ina_cal"
+#define NVS_KEY_ACTIVE_SHUNT "active_shunt"
+#define NVS_PROTECTION_NAMESPACE "protection"
+#define NVS_KEY_LOW_VOLTAGE_CUTOFF "lv_cutoff"
+#define NVS_KEY_HYSTERESIS "hysteresis"
+#define NVS_KEY_OVERCURRENT "oc_thresh"
+
 #define I2C_ADDRESS 0x40
 const int scanTime = 5;
 
