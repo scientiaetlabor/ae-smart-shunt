@@ -60,6 +60,7 @@ public:
     void toggleHardwareAlerts();
     bool areHardwareAlertsDisabled() const;
     float getHardwareAlertThreshold_A() const;
+    void dumpRegisters() const;
 
     // ---------- Linear calibration (legacy / fallback) ----------
     bool loadCalibration(uint16_t shuntRatedA);                          // apply stored linear (gain/offset)

@@ -49,6 +49,7 @@ The smart shunt is configured via a simple serial command-line interface. When c
 | `l` | **Load Toggle** | Manually toggles the load disconnect MOSFET ON or OFF. Useful for testing the hardware circuit. |
 | `a` | **Alert Toggle** | Toggles the hardware overcurrent alert ON or OFF. Useful for debugging. |
 | `s` | **Status Display** | Displays the current protection settings, including the actual hardware alert threshold read from the INA226. |
+| `d` | **Register Dump** | Prints the raw values of the INA226's key hardware registers for deep debugging. |
 
 # v0.0.1
 Version 0.0.1 has been prototyped. I will hand assemble some test boards and do some testing. ~ETA for completion is 10/8/25.

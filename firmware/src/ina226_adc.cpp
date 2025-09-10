@@ -684,3 +684,25 @@ void INA226_ADC::toggleHardwareAlerts() {
 bool INA226_ADC::areHardwareAlertsDisabled() const {
     return m_hardwareAlertsDisabled;
 }
+
+void INA226_ADC::dumpRegisters() const {
+    Serial.println(F("\n--- INA226 Register Dump ---"));
+
+    uint16_t confReg = ina226.readRegister(INA226_WE::INA226_CONF_REG);
+    Serial.print(F("Config (0x00)        : 0x"));
+    Serial.println(confReg, HEX);
+
+    uint16_t calReg = ina226.readRegister(INA226_WE::INA226_CAL_REG);
+    Serial.print(F("Calibration (0x05)   : 0x"));
+    Serial.println(calReg, HEX);
+
+    uint16_t maskEnReg = ina226.readRegister(INA226_WE::INA226_MASK_EN_REG);
+    Serial.print(F("Mask/Enable (0x06)   : 0x"));
+    Serial.println(maskEnReg, HEX);
+
+    uint16_t alertLimitReg = ina226.readRegister(INA226_WE::INA226_ALERT_LIMIT_REG);
+    Serial.print(F("Alert Limit (0x07)   : 0x"));
+    Serial.println(alertLimitReg, HEX);
+
+    Serial.println(F("----------------------------"));
+}

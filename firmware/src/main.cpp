@@ -862,6 +862,11 @@ void loop()
       Serial.println(F(" V"));
       Serial.println(F("-------------------------"));
     }
+    else if (s.equalsIgnoreCase("d"))
+    {
+      // dump INA226 registers
+      ina226_adc.dumpRegisters();
+    }
     // else ignore — keep running
   }
 
