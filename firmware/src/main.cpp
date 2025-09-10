@@ -830,6 +830,23 @@ void loop()
           Serial.println("Hardware alerts ENABLED.");
       }
     }
+    else if (s.equalsIgnoreCase("s"))
+    {
+      // print protection status
+      Serial.println(F("\n--- Protection Status ---"));
+      Serial.print(F("Hardware Alerts      : "));
+      Serial.println(ina226_adc.areHardwareAlertsDisabled() ? "DISABLED" : "ENABLED");
+      Serial.print(F("Overcurrent Threshold: "));
+      Serial.print(ina226_adc.getOvercurrentThreshold());
+      Serial.println(F(" A"));
+      Serial.print(F("Low Voltage Cutoff   : "));
+      Serial.print(ina226_adc.getLowVoltageCutoff());
+      Serial.println(F(" V"));
+      Serial.print(F("Hysteresis           : "));
+      Serial.print(ina226_adc.getHysteresis());
+      Serial.println(F(" V"));
+      Serial.println(F("-------------------------"));
+    }
     // else ignore — keep running
   }
 
