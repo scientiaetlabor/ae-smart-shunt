@@ -23,4 +23,4 @@ SHUNT +,,MountingHole_17mm,,0
 GND,,MountingHole_3.2mm_M3_Pad_Via,,0
 SHUNT -,,MountingHole_17mm,,0
 VIn,,MountingHole_3.2mm_M3_Pad_Via,,0
-SHUNT +,,MountingHole_17mm,,0
+Load Out,,MountingHole_17mm,,0
