@@ -24,6 +24,7 @@ INA226_ADC::INA226_ADC(uint8_t address, float shuntResistorOhms, float batteryCa
       m_isConfigured(false),
       m_activeShuntA(50), // Default to 50A
       m_disconnectReason(NONE),
+      m_hardwareAlertsDisabled(false),
       sampleIndex(0),
       sampleCount(0),
       lastSampleTime(0),
@@ -596,13 +597,19 @@ bool INA226_ADC::isLoadConnected() const {
 }
 
 void INA226_ADC::configureAlert(float amps) {
-    // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)
-    float shuntVoltageLimit_V = amps * calibratedOhms;
+    if (m_hardwareAlertsDisabled) {
+        // Disable the alert by setting the type to OFF
+        ina226.setAlertType(OFF, 0.0);
+        Serial.println("INA226 hardware alert DISABLED.");
+    } else {
+        // Configure INA226 to trigger alert on overcurrent (shunt voltage over limit)
+        float shuntVoltageLimit_V = amps * calibratedOhms;
 
-    ina226.setAlertType(SHUNT_OVER, shuntVoltageLimit_V);
-    ina226.enableAlertLatch();
-    Serial.printf("Configured INA226 alert for overcurrent threshold of %.2fA (Shunt Voltage > %.4fV)\n",
-                  amps, shuntVoltageLimit_V);
+        ina226.setAlertType(SHUNT_OVER, shuntVoltageLimit_V);
+        ina226.enableAlertLatch();
+        Serial.printf("Configured INA226 alert for overcurrent threshold of %.2fA (Shunt Voltage > %.4fV)\n",
+                      amps, shuntVoltageLimit_V);
+    }
 }
 
 void INA226_ADC::handleAlert() {
@@ -611,6 +618,12 @@ void INA226_ADC::handleAlert() {
 
 void INA226_ADC::processAlert() {
     if (alertTriggered) {
+        if (m_hardwareAlertsDisabled) {
+            // If alerts are disabled, just clear the flag and do nothing else.
+            alertTriggered = false;
+            ina226.readAndClearFlags();
+            return;
+        }
         if (isLoadConnected()) { // Only process if the load is currently connected
             Serial.println("Short circuit or overcurrent alert triggered! Disconnecting load.");
             setLoadConnected(false, OVERCURRENT);
@@ -644,4 +657,14 @@ void INA226_ADC::setTempOvercurrentAlert(float amps) {
 
 void INA226_ADC::restoreOvercurrentAlert() {
     configureAlert(overcurrentThreshold);
+}
+
+void INA226_ADC::toggleHardwareAlerts() {
+    m_hardwareAlertsDisabled = !m_hardwareAlertsDisabled;
+    // Re-apply the alert configuration to either enable or disable it on the chip
+    configureAlert(overcurrentThreshold);
+}
+
+bool INA226_ADC::areHardwareAlertsDisabled() const {
+    return m_hardwareAlertsDisabled;
 }

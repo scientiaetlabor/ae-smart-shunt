@@ -820,6 +820,16 @@ void loop()
       // export calibration data
       runExportCalibrationMenu(ina226_adc);
     }
+    else if (s.equalsIgnoreCase("a"))
+    {
+      // toggle hardware alert
+      ina226_adc.toggleHardwareAlerts();
+      if (ina226_adc.areHardwareAlertsDisabled()) {
+          Serial.println("Hardware alerts DISABLED.");
+      } else {
+          Serial.println("Hardware alerts ENABLED.");
+      }
+    }
     // else ignore — keep running
   }
 
