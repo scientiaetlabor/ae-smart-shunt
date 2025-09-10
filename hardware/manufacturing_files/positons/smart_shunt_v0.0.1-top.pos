@@ -1,0 +1,45 @@
+### Footprint positions - created on 2025-09-10T21:25:13+0800 ###
+### Printed by KiCad version 9.0.4
+## Unit = mm, Angle = deg.
+## Side : top
+# Ref     Val                      Package                             PosX       PosY       Rot  Side
+C1        10uF                     C_0603_1608Metric               136.5588   -85.8963    0.0000  top
+C2        100nF                    C_0603_1608Metric               133.4588   -85.8963  180.0000  top
+C3        22uF                     C_0603_1608Metric               135.9088   -80.1963  -90.0000  top
+C4        10uF                     C_0805_2012Metric               136.7013   -83.3672   90.0000  top
+C5        100nF                    C_0603_1608Metric               135.8588   -69.4713   90.0000  top
+C6        10uF                     C_0805_2012Metric               138.7763   -83.3672   90.0000  top
+C7        100nF                    C_0603_1608Metric               145.4000   -83.5000   90.0000  top
+C8        100nF                    C_0603_1608Metric               130.2000   -88.7500   90.0000  top
+C9        22uF                     C_0603_1608Metric               137.4338   -80.1963  -90.0000  top
+C10       22uF                     C_0603_1608Metric               138.9588   -80.1963  -90.0000  top
+C11       100nF                    C_0603_1608Metric               178.8000   -98.8750  -90.0000  top
+C12       220nF                    C_0805_2012Metric               175.8000   -99.1000  180.0000  top
+C13       220uF_50V                CP_Elec_8x10.5                  165.4000   -96.2000  180.0000  top
+D1        Green_LED                LED_0402_1005Metric             143.5788   -92.4813  180.0000  top
+D5        1N5819WS                 D_SOD-323                       136.8588   -92.1713    0.0000  top
+J4        USB_C_Receptacle_USB2.0  USB_C_Receptacle_GCT_USB4110    143.6588   -97.9913    0.0000  top
+L1        3.3uH                    L_APV_ANR4030                   132.8088   -82.2713   90.0000  top
+Q1        CMSL008N06               CMSL008N06                      183.9500   -84.7000  180.0000  top
+Q2        CMSL008N06               CMSL008N06                      183.9500   -73.1000  180.0000  top
+R1        10k                      R_0603_1608Metric               143.5709   -89.3279  180.0000  top
+R2        5.1k                     R_0603_1608Metric               139.6338   -87.5963  180.0000  top
+R3        5.1k                     R_0603_1608Metric               139.6588   -89.3463  180.0000  top
+R4        5.1k                     R_0603_1608Metric               145.9588   -80.1713   90.0000  top
+R5        10k                      R_0603_1608Metric               135.8588   -75.7213  -90.0000  top
+R6        10k                      R_0603_1608Metric               135.9088   -72.6213  -90.0000  top
+R7        10k                      R_0603_1608Metric               147.5588   -80.1713   90.0000  top
+R8        10k                      R_0603_1608Metric               149.3588   -80.1713   90.0000  top
+R9        5.1k                     R_0603_1608Metric               140.2388   -92.4113    0.0000  top
+R10       5.1k                     R_0603_1608Metric               147.2088   -92.4113  180.0000  top
+R11       33.2k                    R_0603_1608Metric               141.1838   -80.1463  -90.0000  top
+R12       10k                      R_0603_1608Metric               142.7838   -80.1713  -90.0000  top
+R13       33.2k                    R_0603_1608Metric               130.0000   -91.1000  180.0000  top
+R14       180k                     R_0603_1608Metric               133.2500   -91.1000  180.0000  top
+SW1       SW_Push                  ALPSALPINE-SKSCLBE010_C115361   119.9088   -68.8713    0.0000  top
+SW2       SW_Push                  ALPSALPINE-SKSCLBE010_C115361   167.3088   -68.8713    0.0000  top
+U1        ESP32-C3-MINI-1          ESP32-C3-MINI-1                 143.4588   -70.1713    0.0000  top
+U2        LM74502H-Q1              SOT-23-8                        175.8000   -96.1000    0.0000  top
+U4        INA226                   VSSOP-10_3x3mm_P0.5mm           134.5588   -88.4713  180.0000  top
+U5        TPS562201                SOT-23-6                        142.0338   -84.0213    0.0000  top
+## End

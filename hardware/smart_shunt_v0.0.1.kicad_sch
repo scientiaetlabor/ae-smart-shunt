@@ -10038,6 +10038,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 270.256 33.274 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF5101T5E"
+			(at 270.256 33.274 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "0856d221-5502-449b-92d1-c11b33eea69e")
 		)
@@ -10189,6 +10207,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "ALPSALPINE"
+			(at 149.098 138.684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "SKSCLBE010"
+			(at 149.098 138.684 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "21d5044a-aed1-466a-b91a-ee6242aa6c29")
 		)
@@ -10276,6 +10312,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "YAGEO"
+			(at 211.836 90.424 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CC0603KRX7R9BB104"
+			(at 211.836 90.424 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5faaa654-b8cf-4500-b4e8-fd2fda5819ee")
 		)
@@ -10350,6 +10404,24 @@
 			)
 		)
 		(property "lcsc" "C22364968"
+			(at 249.174 105.156 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Cmos"
+			(at 249.174 105.156 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CMSL008N06"
 			(at 249.174 105.156 0)
 			(effects
 				(font
@@ -10448,6 +10520,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "Texas Instruments"
+			(at 62.738 36.576 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "TPS562201DDCR"
+			(at 62.738 36.576 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "3"
 			(uuid "bc2a0bd3-1526-4174-96ed-487138be13ea")
 		)
@@ -10509,7 +10599,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/szlcsc/1811131825_Korean-Hroparts-Elec-TYPE-C-31-M-12_C165948.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C5187472.pdf"
 			(at 255.4478 43.2308 0)
 			(effects
 				(font
@@ -10537,6 +10627,33 @@
 			)
 		)
 		(property "LCSC" "C5187472"
+			(at 251.206 43.434 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "TYPE-C 16P QTWT"
+			(at 251.206 43.434 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "  SHOU HAN"
+			(at 251.206 43.434 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "lcsc" "C5187472"
 			(at 251.206 43.434 0)
 			(effects
 				(font
@@ -10817,6 +10934,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 97.79 45.466 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF1002T5E"
+			(at 97.79 45.466 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5d3e23c1-ae37-4299-911c-b2bf3e040cdd")
 		)
@@ -10980,6 +11115,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "Samsung Electro-Mechanics"
+			(at 114.808 41.656 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CL21A226MAQNNNE"
+			(at 114.808 41.656 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "624d242d-5e61-41ae-9d94-0745aa564def")
 		)
@@ -11060,6 +11213,24 @@
 		)
 		(property "LCSC" "C59461"
 			(at 123.698 43.688 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Samsung Electro-Mechanics"
+			(at 122.936 41.91 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CL21A226MAQNNNE"
+			(at 122.936 41.91 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11148,6 +11319,24 @@
 		)
 		(property "LCSC" "C23186"
 			(at 269.494 146.0499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "UNI-ROYAL"
+			(at 267.462 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF5101T5E"
+			(at 267.462 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11306,6 +11495,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "TyoHM"
+			(at 134.366 114.554 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "RMC060333.2K1%N"
+			(at 134.366 114.554 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "e4fc6e15-3894-4568-a295-78e48edf017a")
 		)
@@ -11375,7 +11582,7 @@
 				(hide yes)
 			)
 		)
-		(property "lcsc" ""
+		(property "lcsc" "C5378"
 			(at 202.692 90.424 0)
 			(effects
 				(font
@@ -11386,6 +11593,24 @@
 		)
 		(property "LCSC" "C5378"
 			(at 203.2 92.202 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Samsung Electro-Mechanics"
+			(at 202.692 90.424 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CL21B224KBFNNNE"
+			(at 202.692 90.424 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11478,6 +11703,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 270.256 35.814 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF5101T5E"
+			(at 270.256 35.814 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "91a9bca0-08d1-4a7a-bc75-61c32d6915b3")
 		)
@@ -11556,6 +11799,24 @@
 		)
 		(property "LCSC" "C15269"
 			(at 93.472 35.814 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Sunlord"
+			(at 93.472 34.036 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "SWPA4030S3R3MT"
+			(at 93.472 34.036 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11643,6 +11904,24 @@
 		)
 		(property "LCSC" "C15850"
 			(at 44.196 43.18 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "muRata"
+			(at 43.434 41.402 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "GRM21BR6YA106KE43L"
+			(at 43.434 41.402 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -11804,6 +12083,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 245.872 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF1002T5E"
+			(at 245.872 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "12fac880-0c67-44e2-892a-80059ca299aa")
 		)
@@ -11884,6 +12181,24 @@
 		)
 		(property "LCSC" "C2838502"
 			(at 62.738 77.724 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "ESPRESSIF"
+			(at 88.138 108.204 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "ESP32-C3-MINI-1-H4"
+			(at 88.138 108.204 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12131,6 +12446,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "Texas Instruments"
+			(at 212.598 46.736 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "INA226AIDGSR"
+			(at 212.598 46.736 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "7a459905-949f-45be-85ea-1d0b95eba114")
 		)
@@ -12222,7 +12555,7 @@
 				(hide yes)
 			)
 		)
-		(property "lcsc" ""
+		(property "lcsc" "C123419"
 			(at 134.366 106.934 0)
 			(effects
 				(font
@@ -12233,6 +12566,24 @@
 		)
 		(property "LCSC" "C22827 "
 			(at 139.192 108.712 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "YAGEO"
+			(at 134.366 106.934 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "RC0603FR-07180KL"
+			(at 134.366 106.934 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12467,6 +12818,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "TyoHM"
+			(at 97.79 37.846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "RMC060333.2K1%N"
+			(at 97.79 37.846 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "e379e360-c46d-4769-bf80-d7853b440e1f")
 		)
@@ -12547,6 +12916,24 @@
 		)
 		(property "LCSC" "C19702"
 			(at 217.17 29.464 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Samsung Electro-Mechanics"
+			(at 216.408 27.686 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CL10A106KP8NNNC"
+			(at 216.408 27.686 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -12707,6 +13094,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "muRata"
+			(at 36.068 41.402 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "GRM21BR6YA106KE43L"
+			(at 36.068 41.402 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "8ecaa90a-ef75-470b-b183-469b88d9aa35")
 		)
@@ -12858,6 +13263,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 149.098 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF1002T5E"
+			(at 149.098 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "5a3cd8d8-8070-4ba4-b6a0-4496cf27cce1")
 		)
@@ -12936,6 +13359,24 @@
 		)
 		(property "LCSC" "C25804"
 			(at 139.7 108.204 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "UNI-ROYAL"
+			(at 142.748 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF1002T5E"
+			(at 142.748 106.934 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13030,6 +13471,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "ALPSALPINE"
+			(at 41.91 85.344 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "SKSCLBE010"
+			(at 41.91 85.344 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "58d294cc-cdb3-41c3-8d54-c8c4f03e21d7")
 		)
@@ -13101,6 +13560,24 @@
 		)
 		(property "lcsc" "C2927280"
 			(at 27.94 30.226 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "JSMSEMI"
+			(at 27.94 30.226 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "1N5819WS S4"
+			(at 27.94 30.226 90)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -13261,6 +13738,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "YAGEO"
+			(at 188.468 50.546 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CC0603KRX7R9BB104"
+			(at 188.468 50.546 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "9b8ea7ef-ed6f-465c-9fa0-737eff267534")
 		)
@@ -13348,6 +13843,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "YAGEO"
+			(at 222.758 27.686 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CC0603KRX7R9BB104"
+			(at 222.758 27.686 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "0d2a534d-143f-451d-b170-b474e22cb3ce")
 		)
@@ -13428,6 +13941,24 @@
 		)
 		(property "LCSC" "C59461"
 			(at 108.712 43.434 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Samsung Electro-Mechanics"
+			(at 106.426 41.656 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CL21A226MAQNNNE"
+			(at 106.426 41.656 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -14187,6 +14718,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 57.658 75.184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF1002T5E"
+			(at 57.658 75.184 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "c254e704-88ec-4f37-ad97-ef4839599d92")
 		)
@@ -14272,6 +14821,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 128.778 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF1002T5E"
+			(at 128.778 106.934 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "b64e3bcb-e554-4bcd-9266-3000992e621a")
 		)
@@ -14324,7 +14891,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/ina219.pdf"
+		(property "Datasheet" "https://www.lcsc.com/datasheet/C5219203.pdf"
 			(at 230.378 108.966 0)
 			(effects
 				(font
@@ -14343,6 +14910,24 @@
 			)
 		)
 		(property "lcsc" "C5219203"
+			(at 221.488 106.426 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "TI LM74502HQDDFRQ1"
+			(at 221.488 106.426 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Texas Instruments"
 			(at 221.488 106.426 0)
 			(effects
 				(font
@@ -14654,6 +15239,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "YAGEO"
+			(at 71.628 70.104 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CC0603KRX7R9BB104"
+			(at 71.628 70.104 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "a0a696c8-479b-46a7-94e1-3b85ff99a4a8")
 		)
@@ -14940,6 +15543,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "Yongyu Photoelectric"
+			(at 245.872 152.4 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "SZYY0402YG"
+			(at 245.872 152.4 90)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "8e55f818-34ae-4b38-84aa-f877654fc534")
 		)
@@ -15011,6 +15632,24 @@
 			)
 		)
 		(property "lcsc" "C4054388"
+			(at 263.144 89.662 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Honor Elec"
+			(at 263.144 89.662 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "VP1H221M0810"
 			(at 263.144 89.662 0)
 			(effects
 				(font
@@ -15165,6 +15804,24 @@
 		)
 		(property "LCSC" "C23186"
 			(at 262.128 146.0499 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "UNI-ROYAL"
+			(at 259.842 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF5101T5E"
+			(at 259.842 147.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -15596,6 +16253,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "YAGEO"
+			(at 82.804 36.576 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CC0603KRX7R9BB104"
+			(at 82.804 36.576 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "1"
 			(uuid "2b6fa500-4088-4948-b8d0-85b4aeb8f7e6")
 		)
@@ -15684,6 +16359,24 @@
 				(hide yes)
 			)
 		)
+		(property "MFR" "UNI-ROYAL"
+			(at 275.082 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "0603WAF5101T5E"
+			(at 275.082 147.32 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
 		(pin "2"
 			(uuid "136ad55c-def2-4beb-96ee-36224af89b0b")
 		)
@@ -15758,6 +16451,24 @@
 			)
 		)
 		(property "lcsc" "C22364968"
+			(at 269.24 105.156 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR" "Cmos"
+			(at 269.24 105.156 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(hide yes)
+			)
+		)
+		(property "MFR#" "CMSL008N06"
 			(at 269.24 105.156 0)
 			(effects
 				(font
