@@ -140,7 +140,7 @@ class INA226_WE
         bool convAlert;
         bool limitAlert;
         void writeRegister(uint8_t reg, uint16_t val);
-        uint16_t readRegister(uint8_t reg);
+        uint16_t readRegister(uint8_t reg) const;
     
     protected:
         INA226_AVERAGES deviceAverages;
@@ -155,7 +155,7 @@ class INA226_WE
         uint16_t confRegCopy;
         float currentDivider_mA;
         float pwrMultiplier_mW;
-        uint8_t i2cErrorCode;
+        mutable uint8_t i2cErrorCode;
 };
 
 #endif
