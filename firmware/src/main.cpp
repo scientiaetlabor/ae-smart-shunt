@@ -834,6 +834,10 @@ void loop()
     {
       // print protection status
       Serial.println(F("\n--- Protection Status ---"));
+      int alertPinState = digitalRead(INA_ALERT_PIN);
+      Serial.print(F("Alert Pin State      : "));
+      Serial.print(alertPinState == HIGH ? "INACTIVE (HIGH)" : "ACTIVE (LOW)");
+      Serial.println();
       Serial.print(F("Hardware Alerts      : "));
       Serial.println(ina226_adc.areHardwareAlertsDisabled() ? "DISABLED" : "ENABLED");
       Serial.print(F("Overcurrent Threshold: "));
